@@ -1,0 +1,88 @@
+graph TB
+    %% External Dependencies
+    vLLM_Embed[("vLLM Server<br/>Port 8001<br/>Qwen3-Embedding-8B")]
+    Config[("docs_config.yaml<br/>vllm_endpoint<br/>vllm_model")]
+    Logger[("DocsLogger<br/>Logging System")]
+    
+    %% Input Data
+    Input_Texts["Input: List[str]<br/>Raw text chunks<br/>from docs/code"]
+    
+    %% Main Components
+    subgraph DocsDualMemory["DocsDualMemory System"]
+        EmbedGen["DocsEmbeddingGenerator<br/>🧠 Core Engine"]
+        
+        subgraph Init["Initialization Phase"]
+            InitBackend["_init_backend()<br/>Connect to vLLM<br/>Check health endpoint"]
+        end
+        
+        subgraph Processing["Processing Phase"]
+            Generate["generate(texts)<br/>Entry point"]
+            
+            subgraph Splitting["Adaptive Splitting"]
+                CheckLength{"Text length<br/>> 2000 chars?"}
+                KeepWhole["Keep as single chunk"]
+                SplitText["Split into overlapping<br/>2000-char chunks<br/>200-char overlap"]
+                TrackIndices["Track original indices<br/>orig_idx → [split_indices]"]
+            end
+            
+            subgraph Batching["Concurrent Batching"]
+                CreateBatches["Create batches<br/>batch_size=32"]
+                ThreadPool["ThreadPoolExecutor<br/>max_workers=8"]
+                ProcessBatch["process_batch()<br/>POST /v1/embeddings"]
+                CollectResults["Collect results<br/>as_completed()"]
+            end
+            
+            subgraph Averaging["Embedding Averaging"]
+                BuildMapping["Build mapping<br/>orig_idx → embeddings"]
+                CheckSplits{"Multiple<br/>splits?"}
+                UseSingle["Use single embedding"]
+                AverageEmbs["Average with numpy<br/>np.mean(axis=0)"]
+            end
+        end
+    end
+    
+    %% Output Data
+    Output_Embeddings["Output: List[List[float]]<br/>4096-dim embeddings<br/>One per original text"]
+    Storage[("Storage<br/>project_embeddings.json<br/>41,134 chunks")]
+    
+    %% Data Flow
+    Config --> InitBackend
+    Logger -.-> EmbedGen
+    InitBackend --> EmbedGen
+    
+    Input_Texts --> Generate
+    Generate --> CheckLength
+    
+    CheckLength -->|No| KeepWhole
+    CheckLength -->|Yes| SplitText
+    KeepWhole --> TrackIndices
+    SplitText --> TrackIndices
+    
+    TrackIndices --> CreateBatches
+    CreateBatches --> ThreadPool
+    ThreadPool --> ProcessBatch
+    ProcessBatch -->|HTTP POST| vLLM_Embed
+    vLLM_Embed -->|embeddings| ProcessBatch
+    ProcessBatch --> CollectResults
+    
+    CollectResults --> BuildMapping
+    BuildMapping --> CheckSplits
+    CheckSplits -->|No| UseSingle
+    CheckSplits -->|Yes| AverageEmbs
+    UseSingle --> Output_Embeddings
+    AverageEmbs --> Output_Embeddings
+    
+    Output_Embeddings --> Storage
+    
+    %% Styling
+    classDef external fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef decision fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef core fill:#ffebee,stroke:#c62828,stroke-width:3px
+    
+    class vLLM_Embed,Config,Logger external
+    class Generate,ProcessBatch,SplitText,AverageEmbs process
+    class CheckLength,CheckSplits decision
+    class Storage,Output_Embeddings storage
+    class EmbedGen core

@@ -1,0 +1,207 @@
+graph TB
+    %% ============================================================================
+    %% ENTRY POINTS & ORCHESTRATION (Layer 5)
+    %% ============================================================================
+    START([CLI Entry Point<br/>main])
+    ARGS[Parse Arguments<br/>--check, --update-all,<br/>--watch, --parallel]
+    
+    START --> ARGS
+    
+    %% ============================================================================
+    %% INITIALIZATION (Layer 1: Code Dependencies)
+    %% ============================================================================
+    INIT[DiagramUpdater<br/>__init__]
+    LOAD_SPECS{diagram_specs.json<br/>exists?}
+    CREATE_DEFAULT[Create Default Specs<br/>Architecture, Dependencies,<br/>Call Graphs]
+    LOAD_JSON[Load Existing Specs<br/>from JSON]
+    
+    ARGS --> INIT
+    INIT --> LOAD_SPECS
+    LOAD_SPECS -->|No| CREATE_DEFAULT
+    LOAD_SPECS -->|Yes| LOAD_JSON
+    CREATE_DEFAULT --> SAVE_SPECS[(Save to<br/>diagram_specs.json)]
+    LOAD_JSON --> SPECS_READY[Specs Ready]
+    SAVE_SPECS --> SPECS_READY
+    
+    %% ============================================================================
+    %% MODE SELECTION (Layer 5: Orchestration)
+    %% ============================================================================
+    MODE_CHECK{Mode?}
+    SPECS_READY --> MODE_CHECK
+    
+    %% ============================================================================
+    %% CHECK MODE (Layer 3: Data Flow)
+    %% ============================================================================
+    CHECK_UPDATES[check_updates_needed]
+    ITERATE_SPECS[Iterate Specs]
+    CHECK_SOURCES{_sources_changed?<br/>Compare mtime}
+    NEEDS_UPDATE[Add to<br/>needs_update list]
+    REPORT_CHECK[Report Results]
+    
+    MODE_CHECK -->|--check| CHECK_UPDATES
+    CHECK_UPDATES --> ITERATE_SPECS
+    ITERATE_SPECS --> CHECK_SOURCES
+    CHECK_SOURCES -->|Yes| NEEDS_UPDATE
+    CHECK_SOURCES -->|No| ITERATE_SPECS
+    NEEDS_UPDATE --> REPORT_CHECK
+    
+    %% ============================================================================
+    %% WATCH MODE (Layer 4: External + Layer 1: Code)
+    %% ============================================================================
+    WATCH_START[watch_mode]
+    WATCHDOG_CHECK{watchdog<br/>available?}
+    WATCH_ERROR[Error: Install watchdog]
+    CREATE_HANDLER[DiagramFileHandler<br/>with debouncing]
+    OBSERVER[Observer<br/>recursive monitoring]
+    WAIT_EVENTS[Wait for Events<br/>Ctrl+C to stop]
+    FILE_CHANGED[on_modified<br/>event]
+    DEBOUNCE{Debounce<br/>check}
+    FIND_AFFECTED[find_affected_diagrams<br/>glob pattern matching]
+    UPDATE_AFFECTED[Update Affected<br/>Diagrams]
+    
+    MODE_CHECK -->|--watch| WATCH_START
+    WATCH_START --> WATCHDOG_CHECK
+    WATCHDOG_CHECK -->|No| WATCH_ERROR
+    WATCHDOG_CHECK -->|Yes| CREATE_HANDLER
+    CREATE_HANDLER --> OBSERVER
+    OBSERVER --> WAIT_EVENTS
+    WAIT_EVENTS --> FILE_CHANGED
+    FILE_CHANGED --> DEBOUNCE
+    DEBOUNCE -->|Too soon| WAIT_EVENTS
+    DEBOUNCE -->|OK| FIND_AFFECTED
+    FIND_AFFECTED --> UPDATE_AFFECTED
+    UPDATE_AFFECTED --> WAIT_EVENTS
+    
+    %% ============================================================================
+    %% UPDATE MODE (Sequential vs Parallel)
+    %% ============================================================================
+    UPDATE_MODE{Parallel?}
+    UPDATE_SEQ[update_all<br/>Sequential]
+    UPDATE_PAR[update_all_parallel<br/>ProcessPoolExecutor]
+    
+    MODE_CHECK -->|--update-all| UPDATE_MODE
+    UPDATE_MODE -->|No| UPDATE_SEQ
+    UPDATE_MODE -->|Yes| UPDATE_PAR
+    
+    %% ============================================================================
+    %% SEQUENTIAL UPDATE (Layer 3: Data Flow)
+    %% ============================================================================
+    SEQ_FILTER{Filter by<br/>type/force?}
+    SEQ_CHANGED{_sources_changed?}
+    SEQ_UPDATE[update_diagram]
+    SEQ_STATS[Log Statistics<br/>updated/failed/skipped]
+    
+    UPDATE_SEQ --> SEQ_FILTER
+    SEQ_FILTER --> SEQ_CHANGED
+    SEQ_CHANGED -->|No & !force| SEQ_STATS
+    SEQ_CHANGED -->|Yes or force| SEQ_UPDATE
+    SEQ_UPDATE --> SEQ_FILTER
+    
+    %% ============================================================================
+    %% PARALLEL UPDATE (Layer 5: Orchestration)
+    %% ============================================================================
+    PAR_FILTER[Filter specs<br/>to update]
+    PAR_SUBMIT[Submit to<br/>ProcessPoolExecutor]
+    PAR_WORKER[_update_diagram_worker<br/>in parallel]
+    PAR_COLLECT[Collect Results<br/>as_completed]
+    PAR_STATS[Log Statistics]
+    
+    UPDATE_PAR --> PAR_FILTER
+    PAR_FILTER --> PAR_SUBMIT
+    PAR_SUBMIT --> PAR_WORKER
+    PAR_WORKER --> PAR_COLLECT
+    PAR_COLLECT --> PAR_STATS
+    
+    %% ============================================================================
+    %% DIAGRAM UPDATE CORE (Layer 4: External + Layer 3: Data)
+    %% ============================================================================
+    EXEC_CMD[Execute<br/>generator_command<br/>subprocess.run]
+    CMD_SUCCESS{returncode<br/>== 0?}
+    VALIDATE_MMD{Output is<br/>.mmd?}
+    MERMAID_CLI[_validate_mermaid<br/>mmdc --validate]
+    MMD_VALID{Valid<br/>syntax?}
+    UPDATE_TIMESTAMP[Update<br/>last_updated]
+    UPDATE_FAIL[Log Error]
+    
+    SEQ_UPDATE --> EXEC_CMD
+    PAR_WORKER --> EXEC_CMD
+    EXEC_CMD --> CMD_SUCCESS
+    CMD_SUCCESS -->|No| UPDATE_FAIL
+    CMD_SUCCESS -->|Yes| VALIDATE_MMD
+    VALIDATE_MMD -->|No| UPDATE_TIMESTAMP
+    VALIDATE_MMD -->|Yes| MERMAID_CLI
+    MERMAID_CLI --> MMD_VALID
+    MMD_VALID -->|Yes| UPDATE_TIMESTAMP
+    MMD_VALID -->|No| UPDATE_FAIL
+    
+    %% ============================================================================
+    %% INDEX GENERATION (Layer 3: Data Output)
+    %% ============================================================================
+    GEN_INDEX[generate_index]
+    GROUP_TYPE[Group by<br/>diagram type]
+    BUILD_MD[Build Markdown<br/>with links]
+    WRITE_INDEX[(Write<br/>INDEX.md)]
+    
+    MODE_CHECK -->|--generate-index| GEN_INDEX
+    GEN_INDEX --> GROUP_TYPE
+    GROUP_TYPE --> BUILD_MD
+    BUILD_MD --> WRITE_INDEX
+    
+    %% ============================================================================
+    %% FINAL SAVE & EXIT
+    %% ============================================================================
+    FINAL_SAVE[(Save<br/>diagram_specs.json)]
+    END([Exit])
+    
+    SEQ_STATS --> FINAL_SAVE
+    PAR_STATS --> FINAL_SAVE
+    REPORT_CHECK --> END
+    WATCH_ERROR --> END
+    WRITE_INDEX --> END
+    FINAL_SAVE --> END
+    
+    %% ============================================================================
+    %% DEPENDENCY LAYERS (External Inputs/Outputs)
+    %% ============================================================================
+    
+    %% Layer 1: Code Dependencies
+    LOGGER[docs.utils.docs_logger<br/>DocsLogger]
+    WATCHDOG_LIB[watchdog library<br/>Observer, FileSystemEventHandler]
+    
+    %% Layer 2: Config Dependencies
+    CONFIG_JSON[(diagram_specs.json<br/>DiagramSpec list)]
+    
+    %% Layer 3: Data Dependencies
+    SOURCE_FILES[(Source Files<br/>processing/*.py<br/>utils/*.py<br/>docs/*.md)]
+    OUTPUT_DIAGRAMS[(Output Diagrams<br/>docs/diagrams/<br/>.mmd, .json)]
+    
+    %% Layer 4: External Dependencies
+    MERMAID_CLI_EXT[mermaid-cli<br/>mmdc --validate]
+    SUBPROCESS[subprocess.run<br/>generator commands]
+    
+    %% Connect dependencies
+    INIT -.->|uses| LOGGER
+    WATCH_START -.->|optional| WATCHDOG_LIB
+    LOAD_SPECS -.->|reads| CONFIG_JSON
+    SAVE_SPECS -.->|writes| CONFIG_JSON
+    CHECK_SOURCES -.->|reads mtime| SOURCE_FILES
+    EXEC_CMD -.->|executes| SUBPROCESS
+    MERMAID_CLI -.->|validates| MERMAID_CLI_EXT
+    UPDATE_TIMESTAMP -.->|writes| OUTPUT_DIAGRAMS
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    classDef entryPoint fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef codeLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef configLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef dataLayer fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef externalLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef orchestration fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class START,END entryPoint
+    class LOGGER,WATCHDOG_LIB,CREATE_HANDLER codeLayer
+    class CONFIG_JSON,SAVE_SPECS,LOAD_JSON,FINAL_SAVE configLayer
+    class SOURCE_FILES,OUTPUT_DIAGRAMS,CHECK_SOURCES,WRITE_INDEX dataLayer
+    class MERMAID_CLI_EXT,SUBPROCESS,EXEC_CMD,MERMAID_CLI externalLayer
+    class UPDATE_PAR,PAR_SUBMIT,PAR_WORKER,OBSERVER,MODE_CHECK orchestration

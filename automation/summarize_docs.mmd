@@ -1,0 +1,170 @@
+---
+description: "Mermaid flowchart for summarize_docs.py showing data flows and all dependency layers"
+date: 2025-12-13
+source_file: summarize_docs.py
+tags: mermaid, diagram, visualization, dependencies
+---
+
+# summarize_docs.py - Mermaid Flowchart
+
+<!--TAG:diagram_summarize_docs-->
+
+## Complete Data Flow with All Dependencies
+
+```mermaid
+flowchart TB
+    %% ============================================================================
+    %% LAYER 5: ORCHESTRATION - Entry Points
+    %% ============================================================================
+    START([CLI Entry Point<br/>__main__]) --> PARSE[Parse Arguments<br/>argparse]
+    
+    %% ============================================================================
+    %% LAYER 2: CONFIGURATION - CLI Arguments
+    %% ============================================================================
+    PARSE --> CHECK_INPUT{Input File<br/>Exists?}
+    CHECK_INPUT -->|No| ERROR_EXIT[Log Error<br/>Exit]
+    CHECK_INPUT -->|Yes| INIT_SUMMARIZER[Initialize<br/>DocumentSummarizer]
+    
+    %% ============================================================================
+    %% LAYER 1: CODE DEPENDENCIES - Class Instantiation
+    %% ============================================================================
+    INIT_SUMMARIZER --> CALL_SUMMARIZE[Call summarize<br/>method]
+    
+    %% ============================================================================
+    %% LAYER 3: DATA DEPENDENCIES - File Operations
+    %% ============================================================================
+    CALL_SUMMARIZE --> READ_FILE[Read Input File<br/>UTF-8 encoding]
+    READ_FILE --> EXTRACT_STRUCT[Extract Structure<br/>_extract_structure]
+    
+    %% ============================================================================
+    %% STRUCTURE EXTRACTION ALGORITHM
+    %% ============================================================================
+    EXTRACT_STRUCT --> PARSE_LINES[Split Content<br/>by Newlines]
+    PARSE_LINES --> FIND_TITLE[Find Title<br/>First # Heading]
+    FIND_TITLE --> FIND_SECTIONS[Find Sections<br/>## Headings]
+    FIND_SECTIONS --> FIND_KEYPOINTS[Find Key Points<br/>Bullet Lists]
+    FIND_KEYPOINTS --> FIND_OVERVIEW[Find Overview<br/>First Section]
+    FIND_OVERVIEW --> STRUCT_DICT[Return Structure<br/>Dict]
+    
+    %% ============================================================================
+    %% SUMMARY GENERATION
+    %% ============================================================================
+    STRUCT_DICT --> BUILD_SUMMARY[Build Summary Parts]
+    BUILD_SUMMARY --> ADD_TITLE[Add Title<br/>if exists]
+    ADD_TITLE --> ADD_OVERVIEW[Add Overview<br/>200 chars max]
+    ADD_OVERVIEW --> ADD_SECTIONS[Add Sections<br/>10 max, 100 chars each]
+    ADD_SECTIONS --> ADD_KEYPOINTS[Add Key Points<br/>5 max]
+    ADD_KEYPOINTS --> JOIN_PARTS[Join All Parts<br/>with newlines]
+    
+    %% ============================================================================
+    %% COMPRESSION & OUTPUT
+    %% ============================================================================
+    JOIN_PARTS --> CHECK_LENGTH{Length ><br/>max_length?}
+    CHECK_LENGTH -->|Yes| TRUNCATE[Truncate + Add<br/>'... (truncated)']
+    CHECK_LENGTH -->|No| CREATE_SUMMARY[Create Summary<br/>Dataclass]
+    TRUNCATE --> CREATE_SUMMARY
+    
+    CREATE_SUMMARY --> FORMAT_OUTPUT[Format Output<br/>with Metadata]
+    FORMAT_OUTPUT --> CHECK_OUTPUT{Output<br/>File Specified?}
+    
+    %% ============================================================================
+    %% LAYER 3: DATA DEPENDENCIES - Output Operations
+    %% ============================================================================
+    CHECK_OUTPUT -->|Yes| WRITE_FILE[Write to File<br/>UTF-8 encoding]
+    CHECK_OUTPUT -->|No| PRINT_STDOUT[Print to<br/>stdout]
+    
+    %% ============================================================================
+    %% LAYER 1: CODE DEPENDENCIES - Logging
+    %% ============================================================================
+    WRITE_FILE --> LOG_SUCCESS[DocsLogger.info<br/>'Summary saved']
+    PRINT_STDOUT --> END([End])
+    LOG_SUCCESS --> END
+    ERROR_EXIT --> END
+    
+    %% ============================================================================
+    %% EXTERNAL DEPENDENCIES (LAYER 1)
+    %% ============================================================================
+    subgraph DEPS_CODE["LAYER 1: Code Dependencies"]
+        DEP_LOGGER[docs.utils.docs_logger<br/>DocsLogger]
+        DEP_PATH[pathlib.Path]
+        DEP_DATACLASS[dataclasses.dataclass]
+        DEP_ARGPARSE[argparse]
+        DEP_RE[re - regex]
+    end
+    
+    %% ============================================================================
+    %% DATA DEPENDENCIES (LAYER 3)
+    %% ============================================================================
+    subgraph DEPS_DATA["LAYER 3: Data Dependencies"]
+        INPUT_FILE[Input: User-provided<br/>markdown/text file]
+        OUTPUT_FILE[Output: File or stdout]
+        TEMP_STRUCT[Temp: Structure dict<br/>in memory]
+    end
+    
+    %% ============================================================================
+    %% CONFIGURATION (LAYER 2)
+    %% ============================================================================
+    subgraph DEPS_CONFIG["LAYER 2: Configuration"]
+        CLI_INPUT[--input PATH]
+        CLI_OUTPUT[--output PATH]
+        CLI_MAXLEN[--max-length INT<br/>default: 1000]
+    end
+    
+    %% ============================================================================
+    %% CONNECTIONS TO DEPENDENCY LAYERS
+    %% ============================================================================
+    PARSE -.uses.-> DEP_ARGPARSE
+    PARSE -.reads.-> CLI_INPUT
+    PARSE -.reads.-> CLI_OUTPUT
+    PARSE -.reads.-> CLI_MAXLEN
+    
+    READ_FILE -.reads.-> INPUT_FILE
+    READ_FILE -.uses.-> DEP_PATH
+    
+    EXTRACT_STRUCT -.uses.-> DEP_RE
+    STRUCT_DICT -.stores.-> TEMP_STRUCT
+    
+    CREATE_SUMMARY -.uses.-> DEP_DATACLASS
+    
+    WRITE_FILE -.writes.-> OUTPUT_FILE
+    WRITE_FILE -.uses.-> DEP_PATH
+    
+    LOG_SUCCESS -.uses.-> DEP_LOGGER
+    ERROR_EXIT -.uses.-> DEP_LOGGER
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    classDef entryPoint fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef algorithm fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef dataOp fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef logging fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef dependency fill:#f5f5f5,stroke:#424242,stroke-width:1px
+    
+    class START,END entryPoint
+    class EXTRACT_STRUCT,BUILD_SUMMARY,PARSE_LINES,FIND_TITLE,FIND_SECTIONS,FIND_KEYPOINTS,FIND_OVERVIEW algorithm
+    class READ_FILE,WRITE_FILE,PRINT_STDOUT dataOp
+    class CHECK_INPUT,CHECK_LENGTH,CHECK_OUTPUT decision
+    class LOG_SUCCESS,ERROR_EXIT logging
+    class DEP_LOGGER,DEP_PATH,DEP_DATACLASS,DEP_ARGPARSE,DEP_RE,INPUT_FILE,OUTPUT_FILE,TEMP_STRUCT,CLI_INPUT,CLI_OUTPUT,CLI_MAXLEN dependency
+```
+
+<!--/TAG:diagram_summarize_docs-->
+
+## Legend
+
+- **Blue (Entry Points)**: CLI entry and exit points
+- **Purple (Algorithm)**: Core logic and data processing
+- **Green (Data Operations)**: File I/O operations
+- **Orange (Decisions)**: Conditional branching
+- **Pink (Logging)**: DocsLogger calls
+- **Gray (Dependencies)**: External dependencies by layer
+
+## Dependency Layers Shown
+
+1. **Layer 1 (Code)**: DocsLogger, Path, dataclass, argparse, re
+2. **Layer 2 (Configuration)**: CLI arguments (--input, --output, --max-length)
+3. **Layer 3 (Data)**: Input file, output file, temporary structures
+4. **Layer 4 (External)**: None (pure Python, no API calls)
+5. **Layer 5 (Orchestration)**: __main__ entry point

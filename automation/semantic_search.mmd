@@ -1,0 +1,166 @@
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#1e3a8a','primaryTextColor':'#fff','primaryBorderColor':'#3b82f6','lineColor':'#60a5fa','secondaryColor':'#7c3aed','tertiaryColor':'#059669'}}}%%
+
+graph TB
+    %% ============================================================================
+    %% EXTERNAL DEPENDENCIES (Layer 4)
+    %% ============================================================================
+    subgraph EXT["🌐 External Dependencies"]
+        OPENAI["OpenAI API<br/>(Embeddings)"]
+    end
+
+    %% ============================================================================
+    %% CODE DEPENDENCIES (Layer 1)
+    %% ============================================================================
+    subgraph CODE["💻 Code Dependencies"]
+        LOGGER["DocsLogger<br/>(docs.utils.docs_logger)"]
+        DUALMEM["DocsDualMemory<br/>(docs.utils.docs_dual_memory)"]
+    end
+
+    %% ============================================================================
+    %% CONFIG DEPENDENCIES (Layer 2)
+    %% ============================================================================
+    subgraph CONFIG["⚙️ Config Dependencies"]
+        DOCSCONFIG["docs_config.yaml<br/>(docs/config/)"]
+    end
+
+    %% ============================================================================
+    %% DATA DEPENDENCIES (Layer 3)
+    %% ============================================================================
+    subgraph DATA["📁 Data Dependencies"]
+        DOCS_IN["docs/*.md<br/>(Documentation)"]
+        CODE_IN["project/**/*.py<br/>(Code Files)"]
+        OUTPUT["stdout or<br/>--output file"]
+    end
+
+    %% ============================================================================
+    %% ENTRY POINT (Layer 5 - Orchestration)
+    %% ============================================================================
+    CLI["🎯 CLI Entry Point<br/>main()"]
+    
+    %% ============================================================================
+    %% CORE CLASSES
+    %% ============================================================================
+    subgraph CORE["🧠 Core Architecture"]
+        UNIFIED["UnifiedSearcher<br/>(Main Interface)"]
+        KEYWORD["SimpleKeywordSearcher<br/>(Fallback)"]
+        RESULT["SearchResult<br/>(Data Structure)"]
+    end
+
+    %% ============================================================================
+    %% SEARCH MODES
+    %% ============================================================================
+    subgraph MODES["🔍 Search Modes"]
+        AUTO["auto mode<br/>(Smart Selection)"]
+        SEMANTIC["semantic mode<br/>(Embeddings)"]
+        KW["keyword mode<br/>(Pattern Match)"]
+        HYBRID["hybrid mode<br/>(RRF Fusion)"]
+    end
+
+    %% ============================================================================
+    %% SEARCH EXECUTION
+    %% ============================================================================
+    subgraph EXEC["⚡ Search Execution"]
+        SEM_SEARCH["_semantic_search()<br/>via dual_memory"]
+        KW_SEARCH["_keyword_search()<br/>via SimpleKeywordSearcher"]
+        RRF["_reciprocal_rank_fusion()<br/>(Combine Results)"]
+    end
+
+    %% ============================================================================
+    %% KEYWORD SEARCH INTERNALS
+    %% ============================================================================
+    subgraph KW_INTERNAL["🔤 Keyword Search Process"]
+        EXTRACT["_extract_keywords()<br/>(Remove Stop Words)"]
+        SEARCH_FILE["_search_file()<br/>(Match in File)"]
+        SCORE["Score Calculation<br/>(matches/total_keywords)"]
+    end
+
+    %% ============================================================================
+    %% CONNECTIONS: External Dependencies
+    %% ============================================================================
+    OPENAI -.->|"embeddings"| DUALMEM
+    
+    %% ============================================================================
+    %% CONNECTIONS: Code Dependencies
+    %% ============================================================================
+    LOGGER -->|"logging"| UNIFIED
+    LOGGER -->|"logging"| KEYWORD
+    DUALMEM -.->|"optional"| UNIFIED
+    DOCSCONFIG -->|"config"| LOGGER
+
+    %% ============================================================================
+    %% CONNECTIONS: Data Dependencies
+    %% ============================================================================
+    DOCS_IN -->|"read"| KW_SEARCH
+    CODE_IN -->|"read"| KW_SEARCH
+    DOCS_IN -.->|"indexed"| DUALMEM
+
+    %% ============================================================================
+    %% CONNECTIONS: Entry Point
+    %% ============================================================================
+    CLI -->|"initialize"| UNIFIED
+    CLI -->|"parse args"| MODES
+
+    %% ============================================================================
+    %% CONNECTIONS: Core Architecture
+    %% ============================================================================
+    UNIFIED -->|"contains"| KEYWORD
+    UNIFIED -->|"returns"| RESULT
+    KEYWORD -->|"returns"| RESULT
+
+    %% ============================================================================
+    %% CONNECTIONS: Mode Selection
+    %% ============================================================================
+    AUTO -->|"has_semantic=True"| SEM_SEARCH
+    AUTO -->|"has_semantic=False"| KW_SEARCH
+    SEMANTIC -->|"force"| SEM_SEARCH
+    KW -->|"force"| KW_SEARCH
+    HYBRID -->|"both"| SEM_SEARCH
+    HYBRID -->|"both"| KW_SEARCH
+
+    %% ============================================================================
+    %% CONNECTIONS: Search Execution
+    %% ============================================================================
+    SEM_SEARCH -->|"unified_search()"| DUALMEM
+    SEM_SEARCH -->|"fallback on error"| KW_SEARCH
+    KW_SEARCH -->|"delegates"| KW_INTERNAL
+    
+    %% ============================================================================
+    %% CONNECTIONS: Keyword Search Process
+    %% ============================================================================
+    KW_SEARCH -->|"1. extract"| EXTRACT
+    EXTRACT -->|"2. search files"| SEARCH_FILE
+    SEARCH_FILE -->|"3. calculate"| SCORE
+    SCORE -->|"4. return"| RESULT
+
+    %% ============================================================================
+    %% CONNECTIONS: RRF Fusion
+    %% ============================================================================
+    SEM_SEARCH -->|"results"| RRF
+    KW_SEARCH -->|"results"| RRF
+    RRF -->|"merged"| RESULT
+
+    %% ============================================================================
+    %% CONNECTIONS: Output
+    %% ============================================================================
+    RESULT -->|"JSON or text"| OUTPUT
+
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    classDef external fill:#dc2626,stroke:#991b1b,color:#fff
+    classDef code fill:#2563eb,stroke:#1e40af,color:#fff
+    classDef config fill:#7c3aed,stroke:#6d28d9,color:#fff
+    classDef data fill:#059669,stroke:#047857,color:#fff
+    classDef core fill:#ea580c,stroke:#c2410c,color:#fff
+    classDef mode fill:#0891b2,stroke:#0e7490,color:#fff
+    classDef exec fill:#ca8a04,stroke:#a16207,color:#fff
+    classDef internal fill:#4b5563,stroke:#374151,color:#fff
+
+    class OPENAI external
+    class LOGGER,DUALMEM code
+    class DOCSCONFIG config
+    class DOCS_IN,CODE_IN,OUTPUT data
+    class UNIFIED,KEYWORD,RESULT core
+    class AUTO,SEMANTIC,KW,HYBRID mode
+    class SEM_SEARCH,KW_SEARCH,RRF exec
+    class EXTRACT,SEARCH_FILE,SCORE internal

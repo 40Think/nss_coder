@@ -1,0 +1,116 @@
+---
+description: Tag Validator Architecture and Data Flow
+date: 2025-12-13
+source: tag_validator.py
+---
+
+graph TB
+    %% External Dependencies
+    schema_file[("tag_schema.yaml<br/>📋 Schema")]
+    input_files[("Input Files<br/>📄 .py / .md")]
+    
+    %% Main Components
+    init["TagValidator.__init__()<br/>🔧 Initialize"]
+    load_schema["_load_schema()<br/>📖 Load Schema"]
+    default_schema["_get_default_schema()<br/>⚙️ Fallback Schema"]
+    
+    %% Validation Entry Points
+    validate_file["validate_file()<br/>🔍 Validate Single File"]
+    validate_dir["validate_directory()<br/>📁 Validate Directory"]
+    
+    %% File Processing
+    read_file["Read File Content<br/>📖 UTF-8"]
+    extract_tags["Extract Tags<br/>🏷️ Regex Match"]
+    
+    %% Validation Rules (6 checks)
+    check_count["_check_tag_count()<br/>📊 Max 6 tags"]
+    check_close["_check_matching_close_tags()<br/>🔗 Closing tags"]
+    check_valid["_check_valid_identifiers()<br/>✅ Valid names"]
+    check_component["_check_component_tag()<br/>🧩 Component tag"]
+    check_dup["_check_duplicate_tags()<br/>🔄 No duplicates"]
+    check_dim["_check_known_dimensions()<br/>📐 Known values"]
+    
+    %% Helper Functions
+    infer_comp["_infer_component_from_path()<br/>🔮 Infer from path"]
+    
+    %% Report Generation
+    create_report["ValidationReport<br/>📋 Collect Issues"]
+    add_issue["add_issue()<br/>➕ Add ValidationIssue"]
+    format_report["format_report()<br/>📝 Human Format"]
+    format_summary["format_summary()<br/>📊 Summary Stats"]
+    
+    %% Output
+    console_out[("Console Output<br/>🖥️ Text/JSON")]
+    
+    %% Data Structures
+    severity_enum["Severity Enum<br/>⚠️ ERROR/WARNING/INFO"]
+    issue_class["ValidationIssue<br/>📌 Dataclass"]
+    report_class["ValidationReport<br/>📄 Dataclass"]
+    
+    %% CLI
+    cli["CLI Arguments<br/>⌨️ argparse"]
+    
+    %% Flow: Initialization
+    schema_file -->|exists| load_schema
+    load_schema -->|success| init
+    load_schema -->|fail| default_schema
+    default_schema --> init
+    
+    %% Flow: Entry Points
+    cli --> validate_file
+    cli --> validate_dir
+    input_files --> validate_file
+    input_files --> validate_dir
+    
+    validate_dir -->|for each file| validate_file
+    
+    %% Flow: File Validation
+    validate_file --> read_file
+    read_file --> extract_tags
+    extract_tags --> create_report
+    
+    %% Flow: Run All Checks
+    create_report --> check_count
+    create_report --> check_close
+    create_report --> check_valid
+    create_report --> check_component
+    create_report --> check_dup
+    create_report --> check_dim
+    
+    %% Flow: Component Inference
+    check_component -->|missing component| infer_comp
+    infer_comp -->|suggestion| add_issue
+    
+    %% Flow: Issue Collection
+    check_count -->|issue found| add_issue
+    check_close -->|issue found| add_issue
+    check_valid -->|issue found| add_issue
+    check_component -->|issue found| add_issue
+    check_dup -->|issue found| add_issue
+    check_dim -->|issue found| add_issue
+    
+    add_issue --> create_report
+    
+    %% Flow: Output
+    create_report --> format_report
+    create_report --> format_summary
+    format_report --> console_out
+    format_summary --> console_out
+    
+    %% Data Structure Usage
+    severity_enum -.->|used by| issue_class
+    issue_class -.->|contains| report_class
+    report_class -.->|returned by| validate_file
+    
+    %% Styling
+    classDef external fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef entry fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef validation fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef data fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class schema_file,input_files external
+    class validate_file,validate_dir,cli entry
+    class check_count,check_close,check_valid,check_component,check_dup,check_dim validation
+    class console_out,format_report,format_summary output
+    class severity_enum,issue_class,report_class data

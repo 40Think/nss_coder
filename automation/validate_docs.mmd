@@ -1,0 +1,177 @@
+graph TB
+    %% ============================================================================
+    %% VALIDATE_DOCS.PY - Documentation Validation Flow
+    %% ============================================================================
+    
+    %% Entry Point
+    START([CLI Entry Point])
+    PARSE[Parse Arguments<br/>--report PATH<br/>--ci-mode]
+    INIT[Initialize Validator<br/>project_root detection]
+    
+    %% Main Orchestrator
+    VALIDATE[validate_all<br/>Orchestrator]
+    
+    %% Four Validation Tiers
+    TIER1[check_broken_links<br/>📎 Link Integrity]
+    TIER2[check_missing_specs<br/>📋 Spec Coverage]
+    TIER3[check_spec_code_drift<br/>🔄 Sync Validation]
+    TIER4[check_frontmatter<br/>📝 Format Check]
+    
+    %% Data Inputs
+    INPUT_DOCS[(docs/**/*.md<br/>All Markdown Files)]
+    INPUT_SPECS[(docs/specs/<br/>Specifications)]
+    INPUT_CODE[(processing/, utils/<br/>Python Code)]
+    
+    %% Processing Steps - Tier 1
+    T1_SCAN[Scan all .md files<br/>Collect file inventory]
+    T1_REGEX[Regex: \[text\]\(url\)<br/>Extract links]
+    T1_RESOLVE[Resolve relative paths<br/>Handle anchors]
+    T1_CHECK{File exists?}
+    T1_ISSUE[Create ValidationIssue<br/>severity: error<br/>category: link]
+    
+    %% Processing Steps - Tier 2
+    T2_SCAN_SPECS[Scan specs/<br/>Extract spec names]
+    T2_SCAN_CODE[Scan processing/, utils/<br/>Find .py files]
+    T2_MATCH{Spec exists<br/>for .py file?}
+    T2_ISSUE[Create ValidationIssue<br/>severity: warning<br/>category: missing]
+    
+    %% Processing Steps - Tier 3
+    T3_PAIR[Match spec ↔ code pairs]
+    T3_EXTRACT_SPEC[Regex: `func\(`<br/>Extract spec functions]
+    T3_EXTRACT_CODE[Regex: def func\(<br/>Extract code functions]
+    T3_DIFF{Functions<br/>match?}
+    T3_ISSUE[Create ValidationIssue<br/>severity: warning/info<br/>category: drift]
+    
+    %% Processing Steps - Tier 4
+    T4_SCAN[Scan all .md files<br/>Skip README.MD]
+    T4_REGEX[Regex: ^---\n.*?\n---\n<br/>Check frontmatter]
+    T4_CHECK{Frontmatter<br/>exists?}
+    T4_ISSUE[Create ValidationIssue<br/>severity: info<br/>category: format]
+    
+    %% Issue Aggregation
+    ISSUES[(ValidationIssue List<br/>Accumulated)]
+    
+    %% Report Generation
+    REPORT_GEN[generate_report<br/>Group by severity]
+    REPORT_MD[Markdown Report<br/>Errors/Warnings/Info]
+    
+    %% Output
+    OUTPUT_FILE[(docs/validation_report.md<br/>or custom path)]
+    OUTPUT_LOG[(docs/logs/<br/>DocsLogger output)]
+    
+    %% Exit Logic
+    CI_CHECK{CI mode?}
+    ERROR_CHECK{Errors > 0?}
+    EXIT_SUCCESS([Exit 0<br/>Success])
+    EXIT_FAIL([Exit 1<br/>CI Failure])
+    
+    %% Dependencies
+    DEP_LOGGER[docs.utils.docs_logger<br/>DocsLogger]
+    DEP_STDLIB[Python stdlib<br/>re, pathlib, json]
+    
+    %% ============================================================================
+    %% FLOW CONNECTIONS
+    %% ============================================================================
+    
+    %% Main Flow
+    START --> PARSE
+    PARSE --> INIT
+    INIT --> VALIDATE
+    
+    %% Orchestrator to Tiers
+    VALIDATE --> TIER1
+    VALIDATE --> TIER2
+    VALIDATE --> TIER3
+    VALIDATE --> TIER4
+    
+    %% Tier 1: Broken Links
+    INPUT_DOCS --> T1_SCAN
+    T1_SCAN --> TIER1
+    TIER1 --> T1_REGEX
+    T1_REGEX --> T1_RESOLVE
+    T1_RESOLVE --> T1_CHECK
+    T1_CHECK -->|No| T1_ISSUE
+    T1_CHECK -->|Yes| ISSUES
+    T1_ISSUE --> ISSUES
+    
+    %% Tier 2: Missing Specs
+    INPUT_SPECS --> T2_SCAN_SPECS
+    INPUT_CODE --> T2_SCAN_CODE
+    T2_SCAN_SPECS --> TIER2
+    T2_SCAN_CODE --> TIER2
+    TIER2 --> T2_MATCH
+    T2_MATCH -->|No| T2_ISSUE
+    T2_MATCH -->|Yes| ISSUES
+    T2_ISSUE --> ISSUES
+    
+    %% Tier 3: Drift Detection
+    INPUT_SPECS --> T3_PAIR
+    INPUT_CODE --> T3_PAIR
+    T3_PAIR --> TIER3
+    TIER3 --> T3_EXTRACT_SPEC
+    TIER3 --> T3_EXTRACT_CODE
+    T3_EXTRACT_SPEC --> T3_DIFF
+    T3_EXTRACT_CODE --> T3_DIFF
+    T3_DIFF -->|Mismatch| T3_ISSUE
+    T3_DIFF -->|Match| ISSUES
+    T3_ISSUE --> ISSUES
+    
+    %% Tier 4: Frontmatter
+    INPUT_DOCS --> T4_SCAN
+    T4_SCAN --> TIER4
+    TIER4 --> T4_REGEX
+    T4_REGEX --> T4_CHECK
+    T4_CHECK -->|No| T4_ISSUE
+    T4_CHECK -->|Yes| ISSUES
+    T4_ISSUE --> ISSUES
+    
+    %% Report Generation
+    ISSUES --> REPORT_GEN
+    REPORT_GEN --> REPORT_MD
+    REPORT_MD --> OUTPUT_FILE
+    
+    %% Logging
+    TIER1 -.->|Log steps| OUTPUT_LOG
+    TIER2 -.->|Log steps| OUTPUT_LOG
+    TIER3 -.->|Log steps| OUTPUT_LOG
+    TIER4 -.->|Log steps| OUTPUT_LOG
+    REPORT_GEN -.->|Log stats| OUTPUT_LOG
+    
+    %% Exit Logic
+    REPORT_MD --> CI_CHECK
+    CI_CHECK -->|Yes| ERROR_CHECK
+    CI_CHECK -->|No| EXIT_SUCCESS
+    ERROR_CHECK -->|Yes| EXIT_FAIL
+    ERROR_CHECK -->|No| EXIT_SUCCESS
+    
+    %% Dependencies
+    DEP_LOGGER -.->|Used by| TIER1
+    DEP_LOGGER -.->|Used by| TIER2
+    DEP_LOGGER -.->|Used by| TIER3
+    DEP_LOGGER -.->|Used by| TIER4
+    DEP_STDLIB -.->|Used by| T1_REGEX
+    DEP_STDLIB -.->|Used by| T3_EXTRACT_SPEC
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef entryPoint fill:#e1f5e1,stroke:#4caf50,stroke-width:3px
+    classDef validator fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef tier fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#9c27b0,stroke-width:1px
+    classDef decision fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    classDef issue fill:#ffebee,stroke:#f44336,stroke-width:2px
+    classDef data fill:#e0f7fa,stroke:#00bcd4,stroke-width:2px
+    classDef output fill:#f1f8e9,stroke:#8bc34a,stroke-width:2px
+    classDef dependency fill:#fce4ec,stroke:#e91e63,stroke-width:1px,stroke-dasharray: 5 5
+    
+    class START,EXIT_SUCCESS,EXIT_FAIL entryPoint
+    class PARSE,INIT,VALIDATE validator
+    class TIER1,TIER2,TIER3,TIER4 tier
+    class T1_SCAN,T1_REGEX,T1_RESOLVE,T2_SCAN_SPECS,T2_SCAN_CODE,T3_PAIR,T3_EXTRACT_SPEC,T3_EXTRACT_CODE,T4_SCAN,T4_REGEX process
+    class T1_CHECK,T2_MATCH,T3_DIFF,T4_CHECK,CI_CHECK,ERROR_CHECK decision
+    class T1_ISSUE,T2_ISSUE,T3_ISSUE,T4_ISSUE issue
+    class INPUT_DOCS,INPUT_SPECS,INPUT_CODE,ISSUES data
+    class REPORT_GEN,REPORT_MD,OUTPUT_FILE,OUTPUT_LOG output
+    class DEP_LOGGER,DEP_STDLIB dependency

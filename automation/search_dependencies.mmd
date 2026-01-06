@@ -1,0 +1,170 @@
+graph TB
+    %% ============================================================================
+    %% INPUTS - All Dependency Layers
+    %% ============================================================================
+    
+    subgraph INPUTS["📥 INPUTS (5 Dependency Layers)"]
+        direction TB
+        
+        subgraph LAYER1["Layer 1: CODE"]
+            L1A["docs.utils.docs_logger<br/>(DocsLogger)"]
+            L1B["networkx<br/>(optional)"]
+            L1C["Standard Library<br/>(json, pathlib, etc)"]
+        end
+        
+        subgraph LAYER2["Layer 2: CONFIG"]
+            L2A["No config files<br/>(self-contained)"]
+        end
+        
+        subgraph LAYER3["Layer 3: DATA"]
+            L3A["docs/memory/dependencies/<br/>*_dependencies.json"]
+            L3B["docs/memory/dependencies/<br/>_reverse_index.json"]
+        end
+        
+        subgraph LAYER4["Layer 4: EXTERNAL"]
+            L4A["No external APIs<br/>(offline operation)"]
+        end
+        
+        subgraph LAYER5["Layer 5: ORCHESTRATION"]
+            L5A["CLI Arguments<br/>(argparse)"]
+            L5B["User Queries<br/>(file paths, search terms)"]
+        end
+    end
+    
+    %% ============================================================================
+    %% CORE SYSTEM - Three Optimization Strategies
+    %% ============================================================================
+    
+    subgraph CORE["🧠 CORE SYSTEM - DependencySearcher"]
+        direction TB
+        
+        subgraph CACHE["💾 TASK 1: LRU Cache"]
+            direction LR
+            CACHE_CHECK{{"Cache Hit?"}}
+            CACHE_STORE["Store in Cache<br/>(max 100 entries)"]
+            CACHE_EVICT["LRU Eviction<br/>(remove oldest)"]
+            CACHE_STATS["Cache Stats<br/>(hits/misses/hit_rate)"]
+        end
+        
+        subgraph INDEX["🔍 TASK 2: Inverted Index"]
+            direction LR
+            INDEX_LOAD{{"Index Loaded?"}}
+            INDEX_BUILD["Build Index<br/>(module → files)"]
+            INDEX_SAVE["Save to<br/>_reverse_index.json"]
+            INDEX_LOOKUP["O(1) Lookup<br/>(reverse deps)"]
+        end
+        
+        subgraph GRAPH["📊 TASK 3: NetworkX Graph"]
+            direction LR
+            GRAPH_CHECK{{"Graph Built?"}}
+            GRAPH_BUILD["Build DiGraph<br/>(nodes + edges)"]
+            GRAPH_BFS["BFS Traversal<br/>(transitive deps)"]
+            GRAPH_CYCLES["Cycle Detection<br/>(simple_cycles)"]
+            GRAPH_PATH["Shortest Path<br/>(nx.shortest_path)"]
+        end
+        
+        SEARCH_MAIN["🎯 Main Search<br/>search()"]
+        VISUALIZE["🎨 Visualization<br/>visualize_dependencies()"]
+    end
+    
+    %% ============================================================================
+    %% OUTPUTS - Multiple Formats
+    %% ============================================================================
+    
+    subgraph OUTPUTS["📤 OUTPUTS"]
+        direction TB
+        
+        subgraph OUT_FORMATS["Output Formats"]
+            OUT_TEXT["📝 Text Format<br/>(emoji categorization)"]
+            OUT_MERMAID["🎨 Mermaid Diagram<br/>(graph visualization)"]
+            OUT_JSON["📋 JSON Format<br/>(machine-readable)"]
+        end
+        
+        subgraph OUT_DATA["Data Outputs"]
+            OUT_INDEX["_reverse_index.json<br/>(persistent index)"]
+            OUT_CACHE["In-Memory Cache<br/>(session-only)"]
+            OUT_LOGS["docs/logs/<br/>search_dependencies.log"]
+        end
+        
+        subgraph OUT_ANALYSIS["Analysis Results"]
+            OUT_DEPS["Dependencies<br/>(imports, calls, etc)"]
+            OUT_REVERSE["Reverse Dependencies<br/>(who depends on this)"]
+            OUT_TRANSITIVE["Transitive Dependencies<br/>(depth-limited BFS)"]
+            OUT_CYCLES["Circular Dependencies<br/>(cycle list)"]
+            OUT_STATS["Graph Statistics<br/>(nodes, edges, density)"]
+        end
+    end
+    
+    %% ============================================================================
+    %% DATA FLOWS
+    %% ============================================================================
+    
+    %% Input Layer Connections
+    L1A --> CORE
+    L1B -.-> GRAPH
+    L1C --> CORE
+    L3A --> CACHE
+    L3B -.-> INDEX
+    L5A --> SEARCH_MAIN
+    L5B --> SEARCH_MAIN
+    
+    %% Cache Flow
+    SEARCH_MAIN --> CACHE_CHECK
+    CACHE_CHECK -->|"HIT"| CACHE_STATS
+    CACHE_CHECK -->|"MISS"| L3A
+    L3A --> CACHE_STORE
+    CACHE_STORE --> CACHE_EVICT
+    CACHE_EVICT --> CACHE_STATS
+    
+    %% Index Flow
+    SEARCH_MAIN --> INDEX_LOAD
+    INDEX_LOAD -->|"Exists"| INDEX_LOOKUP
+    INDEX_LOAD -->|"Missing"| INDEX_BUILD
+    INDEX_BUILD --> L3A
+    L3A --> INDEX_BUILD
+    INDEX_BUILD --> INDEX_SAVE
+    INDEX_SAVE --> INDEX_LOOKUP
+    INDEX_LOOKUP --> OUT_REVERSE
+    
+    %% Graph Flow
+    SEARCH_MAIN --> GRAPH_CHECK
+    GRAPH_CHECK -->|"Built"| GRAPH_BFS
+    GRAPH_CHECK -->|"Not Built"| GRAPH_BUILD
+    GRAPH_BUILD --> L3A
+    GRAPH_BUILD --> GRAPH_BFS
+    GRAPH_BFS --> OUT_TRANSITIVE
+    GRAPH_BFS --> GRAPH_CYCLES
+    GRAPH_BFS --> GRAPH_PATH
+    GRAPH_CYCLES --> OUT_CYCLES
+    GRAPH_PATH --> OUT_ANALYSIS
+    
+    %% Visualization Flow
+    SEARCH_MAIN --> VISUALIZE
+    VISUALIZE --> OUT_TEXT
+    VISUALIZE --> OUT_MERMAID
+    VISUALIZE --> OUT_JSON
+    
+    %% Output Connections
+    CACHE_STATS --> OUT_CACHE
+    INDEX_SAVE --> OUT_INDEX
+    SEARCH_MAIN --> OUT_DEPS
+    CORE --> OUT_LOGS
+    GRAPH_BFS --> OUT_STATS
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef inputStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef cacheStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef indexStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef graphStyle fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef outputStyle fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+    classDef mainStyle fill:#ffcdd2,stroke:#b71c1c,stroke-width:3px
+    
+    class L1A,L1B,L1C,L2A,L3A,L3B,L4A,L5A,L5B inputStyle
+    class CACHE_CHECK,CACHE_STORE,CACHE_EVICT,CACHE_STATS cacheStyle
+    class INDEX_LOAD,INDEX_BUILD,INDEX_SAVE,INDEX_LOOKUP indexStyle
+    class GRAPH_CHECK,GRAPH_BUILD,GRAPH_BFS,GRAPH_CYCLES,GRAPH_PATH graphStyle
+    class OUT_TEXT,OUT_MERMAID,OUT_JSON,OUT_INDEX,OUT_CACHE,OUT_LOGS,OUT_DEPS,OUT_REVERSE,OUT_TRANSITIVE,OUT_CYCLES,OUT_STATS outputStyle
+    class SEARCH_MAIN,VISUALIZE mainStyle

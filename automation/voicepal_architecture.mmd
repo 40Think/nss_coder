@@ -1,0 +1,117 @@
+graph TB
+    %% ============================================================================
+    %% VoicePal v3 Architecture: Recursive Hypothesis-Driven Search
+    %% ============================================================================
+    
+    %% External Inputs
+    User([👤 User Voice Input])
+    ObsidianVault[(📓 Obsidian Vault<br/>Ideas/Intuitions)]
+    WebSearch[🌐 Deep Research<br/>Web Queries]
+    
+    %% Core Components
+    Whisper[🎙️ Whisper.cpp<br/>GPU Transcription<br/>large-v3-turbo]
+    Enhancement[✨ Text Enhancement<br/>ASR Correction + 20%<br/>vLLM]
+    
+    %% Search & Memory
+    TotalRecall[🧠 Total Recall<br/>Binary LLM Classification<br/>64 Parallel Batches<br/>30K tokens/sec]
+    Embeddings[📊 Embeddings Search<br/>Optional/Fallback<br/>Unchecked by default]
+    
+    %% Hypothesis System
+    HypothesisGen[💡 Hypothesis Generator<br/>10 Interpretations<br/>File Mapping]
+    UserSelection{👆 User Selects<br/>Hypotheses}
+    
+    %% Dependency Analysis
+    DepAnalyzer[🔗 Dependency Analyzer<br/>Imports/Callers/Tags<br/>Folder Proximity +30%]
+    BatchReader[📚 Batch Reader<br/>64 Concurrent<br/>Full Context Load]
+    
+    %% Output Generation
+    SpecGen[📋 Specification<br/>Generator]
+    TicketGen[🎫 Ticket<br/>Generator]
+    DocGen[📄 Documentation<br/>Generator]
+    
+    %% Multi-Agent
+    TaskDecomp[🔀 Task Decomposer<br/>1→10 Sub-tasks]
+    AgentPool[🤖 Agent Pool<br/>10 Parallel Agents<br/>Shared Logging]
+    
+    %% Storage & Cache
+    ContextCache[(💾 Context Cache<br/>Total Recall Results)]
+    SpecStore[(📁 Specifications<br/>docs/specs/)]
+    TicketStore[(🎟️ Tickets<br/>docs/tickets/)]
+    LogStore[(📝 Logs<br/>docs/logs/)]
+    
+    %% NSS-DOCS Integration
+    NSSMemory[(🗄️ NSS-DOCS<br/>Dual Memory<br/>Semantic Tags<br/>Dependencies)]
+    
+    %% ============================================================================
+    %% Data Flows
+    %% ============================================================================
+    
+    %% Input Phase
+    User -->|Voice Audio| Whisper
+    ObsidianVault -.->|Ideas/Tags| Enhancement
+    Whisper -->|Raw Text RU| Enhancement
+    Enhancement -->|Enhanced Text| TotalRecall
+    Enhancement -->|Enhanced Text| Embeddings
+    
+    %% Total Recall Phase (Round 1)
+    TotalRecall -->|Scan All Files| NSSMemory
+    NSSMemory -->|File List| TotalRecall
+    TotalRecall -->|YES/NO per file<br/>5-20 relevant| ContextCache
+    
+    %% Embeddings Phase (Optional)
+    Embeddings -.->|Top-K Similar| ContextCache
+    
+    %% Hypothesis Phase (Round 2)
+    ContextCache -->|Relevant Files| HypothesisGen
+    HypothesisGen -->|10 Hypotheses<br/>File Indices| UserSelection
+    UserSelection -->|Selected Hypotheses| TotalRecall
+    UserSelection -->|Approved| DepAnalyzer
+    
+    %% Dependency Phase
+    DepAnalyzer -->|Extract Dependencies| NSSMemory
+    NSSMemory -->|Import/Caller/Tag Data| DepAnalyzer
+    DepAnalyzer -->|Dependency List| BatchReader
+    BatchReader -->|Read All Deps<br/>Parallel| NSSMemory
+    BatchReader -->|Summaries| SpecGen
+    
+    %% Generation Phase
+    ContextCache -->|Selected Context| SpecGen
+    ContextCache -->|Selected Context| TicketGen
+    ContextCache -->|Selected Context| DocGen
+    
+    WebSearch -.->|External Context| SpecGen
+    
+    SpecGen -->|Markdown Spec| SpecStore
+    TicketGen -->|Ticket MD| TicketStore
+    DocGen -->|Documentation| NSSMemory
+    
+    %% Multi-Agent Phase (Optional)
+    SpecStore -->|Approved Spec| TaskDecomp
+    TaskDecomp -->|10 Sub-tasks| TicketStore
+    TicketStore -->|Task Queue| AgentPool
+    AgentPool -->|Code/Logs| LogStore
+    AgentPool -->|Updates| NSSMemory
+    
+    %% Feedback Loops
+    LogStore -.->|Progress| UserSelection
+    ContextCache -.->|Refine| TotalRecall
+    
+    %% ============================================================================
+    %% Styling
+    %% ============================================================================
+    
+    classDef input fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef core fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef search fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef hypothesis fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef output fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef storage fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef agent fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class User,ObsidianVault,WebSearch input
+    class Whisper,Enhancement core
+    class TotalRecall,Embeddings,NSSMemory search
+    class HypothesisGen,UserSelection,DepAnalyzer,BatchReader hypothesis
+    class SpecGen,TicketGen,DocGen output
+    class ContextCache,SpecStore,TicketStore,LogStore storage
+    class TaskDecomp,AgentPool agent

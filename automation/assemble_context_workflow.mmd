@@ -1,0 +1,178 @@
+flowchart TD
+    %% ============================================================================
+    %% INPUTS - All 5 Dependency Layers
+    %% ============================================================================
+    
+    subgraph INPUTS["📥 INPUTS (5 Dependency Layers)"]
+        direction TB
+        
+        subgraph CODE_DEPS["1️⃣ Code Dependencies"]
+            DL[docs.utils.docs_logger<br/>DocsLogger]
+            DM[docs.utils.docs_dual_memory<br/>DocsDualMemory]
+            ST[sentence_transformers<br/>SentenceTransformer]
+        end
+        
+        subgraph CONFIG_DEPS["2️⃣ Configuration"]
+            CLI[CLI Arguments<br/>--task / --file / --component]
+            PROJ[Project Root Path]
+        end
+        
+        subgraph DATA_DEPS["3️⃣ Data Sources"]
+            SPECS[docs/specs/*.md<br/>Specifications]
+            WIKI[docs/wiki/*.md<br/>Wiki Guides]
+            CODE[processing/*.py<br/>utils/*.py<br/>Code Files]
+            README[docs/README.MD<br/>Navigation Hub]
+            DEPS_JSON[docs/memory/dependencies/<br/>*_dependencies.json]
+        end
+        
+        subgraph EXTERNAL_DEPS["4️⃣ External Services"]
+            EMB[Embedding Model<br/>all-MiniLM-L6-v2]
+        end
+        
+        subgraph ORCHESTRATION["5️⃣ Orchestration"]
+            MAIN[__main__ Entry Point]
+        end
+    end
+    
+    %% ============================================================================
+    %% CORE LOGIC - Context Assembler
+    %% ============================================================================
+    
+    MAIN --> INIT[ContextAssembler.__init__]
+    
+    INIT --> INIT_DM{Initialize<br/>dual_memory?}
+    INIT_DM -->|Success| SEMANTIC[use_semantic = True<br/>Semantic Search Mode]
+    INIT_DM -->|Fail| KEYWORD[use_semantic = False<br/>Keyword Fallback Mode]
+    
+    CLI --> ROUTER{Route by<br/>Input Type}
+    
+    ROUTER -->|--task| TASK[assemble_for_task]
+    ROUTER -->|--file| FILE[assemble_for_file]
+    ROUTER -->|--component| COMP[assemble_for_component]
+    
+    %% ============================================================================
+    %% TASK-BASED ASSEMBLY
+    %% ============================================================================
+    
+    TASK --> PKG1[Create ContextPackage]
+    PKG1 --> ADD_README1[Add docs/README.MD<br/>score=1.0]
+    ADD_README1 --> EXTRACT_KW[Extract Keywords<br/>RU/EN Synonyms]
+    
+    EXTRACT_KW --> SEARCH_MODE{Semantic<br/>Available?}
+    
+    SEARCH_MODE -->|Yes| SEM_SEARCH[Semantic Search<br/>via dual_memory]
+    SEARCH_MODE -->|No| KW_SEARCH[Keyword Search<br/>File Ranking]
+    
+    SEM_SEARCH --> DM
+    SEM_SEARCH --> EMB
+    SEM_SEARCH --> UNIFIED[unified_search<br/>top_k=15]
+    
+    KW_SEARCH --> RANK_SPECS[Rank Specs by Keywords]
+    KW_SEARCH --> RANK_WIKI[Rank Wiki by Keywords]
+    KW_SEARCH --> RANK_CODE[Rank Code by Keywords]
+    
+    RANK_SPECS --> SPECS
+    RANK_WIKI --> WIKI
+    RANK_CODE --> CODE
+    
+    UNIFIED --> ADD_FILES1[Add Files with Metadata]
+    RANK_SPECS --> ADD_FILES1
+    RANK_WIKI --> ADD_FILES1
+    RANK_CODE --> ADD_FILES1
+    
+    ADD_FILES1 --> FIND_DEPS[Find Dependency Maps]
+    FIND_DEPS --> DEPS_JSON
+    FIND_DEPS --> ADD_DEPS[Add Dependency JSONs]
+    
+    ADD_DEPS --> GEN_TREE[Generate Project Tree]
+    GEN_TREE --> STATS[Collect Assembly Stats]
+    
+    %% ============================================================================
+    %% FILE-BASED ASSEMBLY
+    %% ============================================================================
+    
+    FILE --> PKG2[Create ContextPackage]
+    PKG2 --> ADD_README2[Add docs/README.MD]
+    ADD_README2 --> ADD_DIR_README[Add Directory README<br/>if exists]
+    ADD_DIR_README --> README
+    ADD_DIR_README --> ADD_TARGET[Add Target File]
+    ADD_TARGET --> CODE
+    ADD_TARGET --> FIND_SPEC[Find Spec for File]
+    FIND_SPEC --> SPECS
+    FIND_SPEC --> EXTRACT_TAGS[Extract Tags from File]
+    EXTRACT_TAGS --> STATS
+    
+    %% ============================================================================
+    %% COMPONENT-BASED ASSEMBLY
+    %% ============================================================================
+    
+    COMP --> PKG3[Create ContextPackage]
+    PKG3 --> SET_KW[Set Keywords = [component_name]]
+    SET_KW --> FIND_MATCHING[Find Matching Files<br/>in Code Directories]
+    FIND_MATCHING --> CODE
+    FIND_MATCHING --> RANK_BY_COMP[Rank Specs/Wiki<br/>by Component]
+    RANK_BY_COMP --> SPECS
+    RANK_BY_COMP --> WIKI
+    RANK_BY_COMP --> STATS
+    
+    %% ============================================================================
+    %% OUTPUT GENERATION
+    %% ============================================================================
+    
+    STATS --> GEN_OUTPUT[generate_context_file]
+    
+    GEN_OUTPUT --> BUILD_HEADER[Build Header<br/>Task, Strategy, Stats]
+    BUILD_HEADER --> BUILD_TREE[Add Project Tree]
+    BUILD_TREE --> SORT_FILES[Sort Files by Score]
+    SORT_FILES --> ADD_CONTENT[Add File Contents<br/>with Metadata]
+    ADD_CONTENT --> ADD_TAGS_SUMMARY[Add Tags Summary]
+    
+    %% ============================================================================
+    %% OUTPUTS
+    %% ============================================================================
+    
+    ADD_TAGS_SUMMARY --> OUTPUT_FILE
+    
+    subgraph OUTPUTS["📤 OUTPUTS"]
+        direction TB
+        OUTPUT_FILE[docs/temp/context.md<br/>Assembled Context]
+        LOG_FILE[docs/logs/assemble_context/<br/>Execution Logs]
+        CONSOLE[Console Output<br/>Summary Stats]
+    end
+    
+    DL --> LOG_FILE
+    GEN_OUTPUT --> OUTPUT_FILE
+    STATS --> CONSOLE
+    
+    %% ============================================================================
+    %% METADATA FLOW
+    %% ============================================================================
+    
+    subgraph METADATA["🏷️ Metadata Tracking"]
+        direction LR
+        FM[FileMetadata:<br/>- path<br/>- reason<br/>- relevance_score<br/>- matched_keywords<br/>- content_type<br/>- file_size_kb<br/>- last_modified<br/>- tags<br/>- line_range]
+        
+        CP[ContextPackage:<br/>- task_description<br/>- readme_files<br/>- spec_files<br/>- wiki_files<br/>- code_files<br/>- dependency_maps<br/>- file_metadata<br/>- assembly_stats<br/>- search_strategy<br/>- project_tree]
+    end
+    
+    ADD_FILES1 --> FM
+    FM --> CP
+    CP --> GEN_OUTPUT
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef inputClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef codeDepClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef dataClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef logicClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef outputClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef metadataClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class INPUTS,CODE_DEPS,CONFIG_DEPS,DATA_DEPS,EXTERNAL_DEPS,ORCHESTRATION inputClass
+    class DL,DM,ST codeDepClass
+    class SPECS,WIKI,CODE,README,DEPS_JSON dataClass
+    class INIT,TASK,FILE,COMP,SEM_SEARCH,KW_SEARCH,GEN_OUTPUT logicClass
+    class OUTPUTS,OUTPUT_FILE,LOG_FILE,CONSOLE outputClass
+    class METADATA,FM,CP metadataClass

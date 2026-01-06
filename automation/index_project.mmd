@@ -1,0 +1,151 @@
+graph TB
+    %% ============================================================================
+    %% INDEX PROJECT - AI Memory System Builder
+    %% ============================================================================
+    
+    %% Entry Points
+    START([CLI Entry Point])
+    
+    %% Main Components
+    INDEXER[ProjectIndexer<br/>Main Orchestrator]
+    INCREMENTAL[IncrementalIndexer<br/>File Hash Cache]
+    
+    %% Core Functions
+    BUILD_EMB[build_embeddings<br/>Vector Generation]
+    BUILD_KG[build_knowledge_graph<br/>Entity Relationships]
+    BUILD_IDX[build_indexes<br/>Lookup Tables]
+    BUILD_HUMAN[generate_human_readable_index<br/>PROJECT_INDEX.md]
+    
+    %% Helper Functions
+    EXTRACT[_extract_code_entities<br/>AST Parser]
+    PROCESS_DEP[_process_dependency_file<br/>JSON Parser]
+    GEN_EMB_REAL[_generate_embeddings_real<br/>sentence-transformers/vLLM]
+    GEN_EMB_PLACEHOLDER[_generate_embeddings_placeholder<br/>Hash-based Fallback]
+    GEN_ID[_generate_id<br/>MD5 Hash Generator]
+    
+    %% Data Inputs
+    INPUT_CHUNKS[(docs/memory/chunks/<br/>chunks_index.json)]
+    INPUT_DEPS[(docs/memory/dependencies/<br/>*_dependencies.json)]
+    INPUT_CODE[(Code Files:<br/>processing/*.py<br/>utils/*.py<br/>scripts/*.py)]
+    
+    %% Configuration
+    CONFIG[(docs/config/<br/>docs_config.yaml)]
+    
+    %% Data Outputs
+    OUTPUT_EMB[(docs/memory/embeddings/<br/>project_embeddings.json)]
+    OUTPUT_KG[(docs/memory/knowledge_graph/<br/>code_graph.json)]
+    OUTPUT_IDX[(docs/memory/indexes/<br/>lookup_indexes.json)]
+    OUTPUT_HUMAN[(docs/memory/<br/>PROJECT_INDEX.md)]
+    OUTPUT_CACHE[(docs/memory/<br/>.index_cache.json)]
+    
+    %% External Dependencies
+    EXT_SENTENCE[sentence_transformers<br/>Optional Library]
+    EXT_VLLM[vLLM Embedding API<br/>Optional Service]
+    
+    %% Code Dependencies
+    DEP_LOGGER[docs.utils.docs_logger<br/>DocsLogger]
+    DEP_CONFIG[docs.utils.docs_config<br/>docs_config]
+    
+    %% ============================================================================
+    %% MAIN FLOW
+    %% ============================================================================
+    
+    START --> INDEXER
+    INDEXER --> BUILD_EMB
+    INDEXER --> BUILD_KG
+    INDEXER --> BUILD_IDX
+    INDEXER --> BUILD_HUMAN
+    
+    %% ============================================================================
+    %% BUILD EMBEDDINGS FLOW
+    %% ============================================================================
+    
+    BUILD_EMB --> INPUT_CHUNKS
+    BUILD_EMB --> INPUT_CODE
+    INPUT_CHUNKS -->|Load doc chunks| BUILD_EMB
+    INPUT_CODE -->|Extract entities| EXTRACT
+    EXTRACT -->|CodeEntity objects| BUILD_EMB
+    BUILD_EMB -->|All chunks| GEN_EMB_REAL
+    
+    %% Embedding Generation Decision Tree
+    GEN_EMB_REAL -->|Try first| EXT_SENTENCE
+    EXT_SENTENCE -->|Success| OUTPUT_EMB
+    EXT_SENTENCE -->|ImportError| EXT_VLLM
+    EXT_VLLM -->|Not configured| GEN_EMB_PLACEHOLDER
+    GEN_EMB_PLACEHOLDER -->|Deterministic vectors| OUTPUT_EMB
+    
+    %% ============================================================================
+    %% BUILD KNOWLEDGE GRAPH FLOW
+    %% ============================================================================
+    
+    BUILD_KG --> INPUT_DEPS
+    INPUT_DEPS -->|For each JSON| PROCESS_DEP
+    PROCESS_DEP -->|Extract imports| BUILD_KG
+    PROCESS_DEP -->|Extract calls| BUILD_KG
+    PROCESS_DEP -->|Extract hierarchy| BUILD_KG
+    BUILD_KG -->|entities + relationships| OUTPUT_KG
+    
+    %% ============================================================================
+    %% BUILD INDEXES FLOW
+    %% ============================================================================
+    
+    BUILD_IDX -->|Group by file| OUTPUT_IDX
+    BUILD_IDX -->|Group by type| OUTPUT_IDX
+    BUILD_IDX -->|Group by name| OUTPUT_IDX
+    BUILD_IDX -->|Index relationships| OUTPUT_IDX
+    
+    %% ============================================================================
+    %% BUILD HUMAN INDEX FLOW
+    %% ============================================================================
+    
+    BUILD_HUMAN -->|Read entities| BUILD_KG
+    BUILD_HUMAN -->|Generate Mermaid| OUTPUT_HUMAN
+    BUILD_HUMAN -->|File structure| OUTPUT_HUMAN
+    BUILD_HUMAN -->|Entity summary| OUTPUT_HUMAN
+    
+    %% ============================================================================
+    %% INCREMENTAL INDEXING FLOW
+    %% ============================================================================
+    
+    INCREMENTAL -->|Load cache| OUTPUT_CACHE
+    INCREMENTAL -->|Check file hashes| INPUT_CODE
+    INCREMENTAL -->|Save cache| OUTPUT_CACHE
+    INDEXER -.->|Optional mode| INCREMENTAL
+    
+    %% ============================================================================
+    %% HELPER FUNCTIONS
+    %% ============================================================================
+    
+    EXTRACT -->|Generate IDs| GEN_ID
+    PROCESS_DEP -->|Generate IDs| GEN_ID
+    
+    %% ============================================================================
+    %% CODE DEPENDENCIES
+    %% ============================================================================
+    
+    INDEXER -.->|Uses| DEP_LOGGER
+    GEN_EMB_REAL -.->|Uses| DEP_CONFIG
+    BUILD_EMB -.->|Logs to| DEP_LOGGER
+    BUILD_KG -.->|Logs to| DEP_LOGGER
+    BUILD_IDX -.->|Logs to| DEP_LOGGER
+    BUILD_HUMAN -.->|Logs to| DEP_LOGGER
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef inputData fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef outputData fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef mainFunc fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef helperFunc fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef config fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef dependency fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    
+    class INPUT_CHUNKS,INPUT_DEPS,INPUT_CODE inputData
+    class OUTPUT_EMB,OUTPUT_KG,OUTPUT_IDX,OUTPUT_HUMAN,OUTPUT_CACHE outputData
+    class BUILD_EMB,BUILD_KG,BUILD_IDX,BUILD_HUMAN mainFunc
+    class EXTRACT,PROCESS_DEP,GEN_EMB_REAL,GEN_EMB_PLACEHOLDER,GEN_ID helperFunc
+    class EXT_SENTENCE,EXT_VLLM external
+    class CONFIG config
+    class DEP_LOGGER,DEP_CONFIG dependency

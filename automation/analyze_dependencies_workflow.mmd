@@ -1,0 +1,145 @@
+graph TB
+    subgraph Input["📥 INPUT"]
+        PY[Python Source File<br/>*.py]
+        SRC[Source Code String]
+    end
+    
+    subgraph Parser["🔬 AST PARSING"]
+        READ[Read File UTF-8]
+        AST[ast.parse<br/>Generate AST Tree]
+        READ --> AST
+    end
+    
+    subgraph Analyzers["🔍 ANALYSIS ENGINES"]
+        ASTV[DependencyAnalyzer<br/>AST Visitor]
+        DYN[DynamicImportDetector<br/>Regex Engine]
+    end
+    
+    subgraph Layer1["📦 LAYER 1: CODE"]
+        IMP[Imports<br/>regular + relative]
+        FUNC[Function Calls<br/>with context]
+        CLASS[Class Hierarchy<br/>+ metaclasses]
+        DEC[Decorators<br/>with args/kwargs]
+        EXPORT[Exports<br/>public symbols]
+    end
+    
+    subgraph Layer2["⚙️ LAYER 2: CONFIG"]
+        CFG[Config Files<br/>YAML/JSON]
+        ENV[Environment Vars<br/>os.getenv]
+        CLI[CLI Arguments<br/>argparse]
+    end
+    
+    subgraph Layer3["💾 LAYER 3: DATA"]
+        FREAD[File Reads<br/>open/Path]
+        FWRITE[File Writes<br/>write/dump]
+        TRANS[Data Transforms<br/>load/parse]
+    end
+    
+    subgraph Layer4["🌐 LAYER 4: EXTERNAL"]
+        API[API Calls<br/>requests/httpx]
+        LIBS[External Libraries<br/>3rd party]
+        PROC[Subprocess<br/>system commands]
+    end
+    
+    subgraph Layer5["🎭 LAYER 5: ORCHESTRATION"]
+        ENTRY[Entry Points<br/>main/__main__]
+        SCRIPT[Script Calls<br/>subprocess.run]
+    end
+    
+    subgraph Metadata["📊 METADATA GENERATION"]
+        STATS[Statistics<br/>counts + metrics]
+        META[Metadata Dict<br/>version + timestamp]
+    end
+    
+    subgraph Output["📤 OUTPUT"]
+        JSON[JSON File<br/>*_dependencies.json]
+        LOG[Logs<br/>docs/logs/]
+    end
+    
+    %% Main Flow
+    PY --> READ
+    READ --> SRC
+    SRC --> AST
+    
+    %% AST Analysis
+    AST --> ASTV
+    SRC --> DYN
+    
+    %% Layer 1 Detection
+    ASTV --> IMP
+    ASTV --> FUNC
+    ASTV --> CLASS
+    ASTV --> DEC
+    ASTV --> EXPORT
+    DYN --> IMP
+    
+    %% Layer 2 Detection
+    ASTV --> CFG
+    ASTV --> ENV
+    ASTV --> CLI
+    
+    %% Layer 3 Detection
+    ASTV --> FREAD
+    ASTV --> FWRITE
+    ASTV --> TRANS
+    
+    %% Layer 4 Detection
+    ASTV --> API
+    ASTV --> LIBS
+    ASTV --> PROC
+    
+    %% Layer 5 Detection
+    ASTV --> ENTRY
+    ASTV --> SCRIPT
+    
+    %% Metadata
+    IMP --> STATS
+    FUNC --> STATS
+    CLASS --> STATS
+    DYN --> STATS
+    STATS --> META
+    
+    %% Output
+    IMP --> JSON
+    FUNC --> JSON
+    CLASS --> JSON
+    DEC --> JSON
+    EXPORT --> JSON
+    CFG --> JSON
+    ENV --> JSON
+    CLI --> JSON
+    FREAD --> JSON
+    FWRITE --> JSON
+    TRANS --> JSON
+    API --> JSON
+    LIBS --> JSON
+    PROC --> JSON
+    ENTRY --> JSON
+    SCRIPT --> JSON
+    META --> JSON
+    
+    ASTV -.logs.-> LOG
+    DYN -.logs.-> LOG
+    
+    %% Styling
+    classDef inputStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef parserStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef analyzerStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef layer1Style fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef layer2Style fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef layer3Style fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef layer4Style fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef layer5Style fill:#ede7f6,stroke:#311b92,stroke-width:2px
+    classDef metaStyle fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef outputStyle fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    
+    class PY,SRC inputStyle
+    class READ,AST parserStyle
+    class ASTV,DYN analyzerStyle
+    class IMP,FUNC,CLASS,DEC,EXPORT layer1Style
+    class CFG,ENV,CLI layer2Style
+    class FREAD,FWRITE,TRANS layer3Style
+    class API,LIBS,PROC layer4Style
+    class ENTRY,SCRIPT layer5Style
+    class STATS,META metaStyle
+    class JSON,LOG outputStyle

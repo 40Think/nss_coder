@@ -1,0 +1,98 @@
+graph TB
+    %% Input Layer
+    INPUT_MD[📄 Markdown Files<br/>docs/**/*.md]
+    INPUT_YAML[⚙️ YAML Frontmatter<br/>metadata, tags, date]
+    INPUT_CONFIG[🔧 Configuration<br/>clause_size, section_size]
+    
+    %% Main Process
+    CHUNKER[🏗️ HierarchicalDocumentChunker<br/>3-Layer Architecture]
+    
+    %% Frontmatter Processing
+    EXTRACT_FM[📋 Extract Frontmatter<br/>YAML parsing]
+    REMOVE_FM[✂️ Remove Frontmatter<br/>Clean content]
+    
+    %% Structure Detection
+    DETECT_BLOCKS[🔍 Detect Preserved Blocks<br/>Code fences, Tables, Lists]
+    DETECT_HEADERS[📑 Split by Headers<br/>Hierarchy tracking]
+    
+    %% Layer 2: Documents
+    L2_DOC[📚 Layer 2: DOCUMENTS<br/>Full document + frontmatter<br/>ID: doc_*]
+    
+    %% Layer 1: Sections
+    L1_SEC[📖 Layer 1: SECTIONS<br/>Header-based chunks<br/>ID: sec_*_N<br/>parent_id → doc_*]
+    
+    %% Layer 0: Clauses
+    PRESERVE[🛡️ Preserve Structures<br/>Keep code/tables intact]
+    ADAPTIVE[🎯 Adaptive Sizing<br/>300-800 chars by complexity]
+    L0_CLS[📝 Layer 0: CLAUSES<br/>Fine-grained chunks<br/>ID: cls_*_N_M<br/>parent_id → sec_*]
+    
+    %% Output Layer
+    OUT_JSON_L0[💾 clauses.json<br/>3527 chunks]
+    OUT_JSON_L1[💾 sections.json<br/>2635 chunks]
+    OUT_JSON_L2[💾 documents.json<br/>145 chunks]
+    OUT_INDEX[📇 Combined Index<br/>All layers + metadata]
+    
+    %% External Dependencies
+    DEP_LOGGER[📊 ParanoidLogger<br/>utils/paranoid_logger.py]
+    DEP_YAML[📦 yaml library<br/>Frontmatter parsing]
+    DEP_RE[🔤 regex patterns<br/>Structure detection]
+    
+    %% Data Flow
+    INPUT_MD --> CHUNKER
+    INPUT_YAML -.metadata.-> CHUNKER
+    INPUT_CONFIG -.config.-> CHUNKER
+    
+    CHUNKER --> EXTRACT_FM
+    EXTRACT_FM --> REMOVE_FM
+    REMOVE_FM --> DETECT_HEADERS
+    REMOVE_FM --> DETECT_BLOCKS
+    
+    %% Layer 2 Generation
+    EXTRACT_FM --> L2_DOC
+    REMOVE_FM --> L2_DOC
+    
+    %% Layer 1 Generation
+    DETECT_HEADERS --> L1_SEC
+    L2_DOC -.parent.-> L1_SEC
+    
+    %% Layer 0 Generation
+    L1_SEC --> PRESERVE
+    DETECT_BLOCKS --> PRESERVE
+    PRESERVE --> ADAPTIVE
+    ADAPTIVE --> L0_CLS
+    L1_SEC -.parent.-> L0_CLS
+    
+    %% Output Generation
+    L0_CLS --> OUT_JSON_L0
+    L1_SEC --> OUT_JSON_L1
+    L2_DOC --> OUT_JSON_L2
+    
+    OUT_JSON_L0 --> OUT_INDEX
+    OUT_JSON_L1 --> OUT_INDEX
+    OUT_JSON_L2 --> OUT_INDEX
+    
+    %% External Dependencies
+    DEP_LOGGER -.logging.-> CHUNKER
+    DEP_YAML -.parsing.-> EXTRACT_FM
+    DEP_RE -.patterns.-> DETECT_BLOCKS
+    DEP_RE -.patterns.-> DETECT_HEADERS
+    
+    %% Downstream Consumers
+    OUT_INDEX ==> CONSUMER_INDEX[🔎 index_project.py<br/>Vector embeddings]
+    OUT_INDEX ==> CONSUMER_SEARCH[🔍 semantic_search.py<br/>RAG retrieval]
+    OUT_INDEX ==> CONSUMER_MEMORY[🧠 dual_memory.py<br/>Memory storage]
+    
+    %% Styling
+    classDef inputClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef processClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef layerClass fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    classDef outputClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef depClass fill:#fce4ec,stroke:#880e4f,stroke-width:1px,stroke-dasharray: 5 5
+    classDef consumerClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class INPUT_MD,INPUT_YAML,INPUT_CONFIG inputClass
+    class CHUNKER,EXTRACT_FM,REMOVE_FM,DETECT_BLOCKS,DETECT_HEADERS,PRESERVE,ADAPTIVE processClass
+    class L2_DOC,L1_SEC,L0_CLS layerClass
+    class OUT_JSON_L0,OUT_JSON_L1,OUT_JSON_L2,OUT_INDEX outputClass
+    class DEP_LOGGER,DEP_YAML,DEP_RE depClass
+    class CONSUMER_INDEX,CONSUMER_SEARCH,CONSUMER_MEMORY consumerClass

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ VoicePal v2 - Voice to AI Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎙️ VoicePal v2</h1>
+            <p>Voice to AI Interface — Whisper + vLLM + NSS-DOCS</p>
+        </header>
+        
+        <!-- Scope Selection: Tree Viewer + External Files -->
+        <div class="scope-row">
+            <!-- Tree Viewer Panel -->
+            <div class="card" id="treeViewerCard">
+                <h2>📁 Project Tree</h2>
+                <div class="tree-controls">
+                    <button onclick="selectAllTree(true)">✅ All</button>
+                    <button onclick="selectAllTree(false)">☐ None</button>
+                    <button onclick="smartPreselect()" id="smartPreselectBtn">⭐ Smart Select</button>
+                    <button onclick="toggleTreeCollapse()">📂 Toggle</button>
+                    <button onclick="treeTotalRecall()" id="treeTotalRecallBtn" title="Scan only selected files">🧠 TR</button>
+                </div>
+                <div id="treeContainer" class="tree-viewer">Loading...</div>
+            </div>
+            
+            <!-- External Files Panel -->
+            <div class="card" id="externalFilesCard">
+                <h2>📂 External Files</h2>
+                <div class="external-input-row">
+                    <input type="file" id="externalFileInput" multiple accept=".md,.txt,.py,.json" style="display:none;">
+                    <input type="file" id="externalFolderInput" webkitdirectory multiple style="display:none;">
+                    <button class="action-btn" onclick="document.getElementById('externalFileInput').click()">📄 Files</button>
+                    <button class="action-btn" onclick="document.getElementById('externalFolderInput').click()">📁 Folder</button>
+                </div>
+                <div id="externalFilesList"></div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.3rem;">
+                    Allowed: .md, .txt, .py, .json (max 500KB each)
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recording + Input Section -->
+        <div class="card">
+            <div class="record-section">
+                <button id="recordBtn" class="record-btn" title="Click to start/stop">🎙️</button>
+                <div class="record-info">
+                    <div class="record-status" id="recordStatus">Click to start recording</div>
+                    <div class="record-timer" id="recordTimer">00:00</div>
+                </div>
+                <div class="action-grid">
+                    <button class="action-btn" data-format="enhanced" disabled>
+                        <span class="icon">✨</span>Enhanced
+                    </button>
+                    <button class="action-btn" data-format="prompt" disabled>
+                        <span class="icon">🎯</span>Prompt
+                    </button>
+                    <button class="action-btn" data-format="ticket" disabled>
+                        <span class="icon">🎫</span>Ticket
+                    </button>
+                    <button class="action-btn" data-format="spec" disabled>
+                        <span class="icon">📋</span>Spec
+                    </button>
+                    <button class="action-btn" id="searchBtn" disabled>
+                        <span class="icon">🔍</span>Search
+                    </button>
+                    <button class="action-btn" id="reindexBtn" title="Rebuild embeddings index">
+                        <span class="icon">🔄</span>Re-index
+                    </button>
+                    <button class="action-btn" id="totalRecallBtn" disabled>
+                        <span class="icon">🧠</span>Total Recall
+                    </button>
+                </div>
+            </div>
+            <textarea id="editableText" class="editable-text" placeholder="Transcribed text will appear here. You can edit it."></textarea>
+        </div>
+        
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div id="loadingText">Processing...</div>
+        </div>
+        
+        <!-- Two-column panels -->
+        <div class="panels-row">
+            <!-- Original Output Panel -->
+            <div class="card" id="outputCard" style="display: none;">
+                <h2>📊 Original</h2>
+                <div class="output-tabs" id="originalTabs">
+                    <button class="tab-btn active" data-tab="original">🇷🇺 RU</button>
+                    <button class="tab-btn" data-tab="english">🇬🇧 EN</button>
+                    <button class="tab-btn" data-tab="enhanced">✨ Enhanced</button>
+                </div>
+                <div class="output-content" id="originalContent">
+                    <button class="copy-btn" onclick="copyText('originalText')" title="Copy">📋</button>
+                    <div id="originalText"></div>
+                </div>
+            </div>
+            
+            <!-- Generated Output Panel -->
+            <div class="card" id="generatedCard" style="display: none;">
+                <h2>📄 Generated</h2>
+                <div class="output-tabs" id="generatedTabs">
+                    <button class="tab-btn" data-tab="prompt">🎯 Prompt</button>
+                    <button class="tab-btn" data-tab="ticket">🎫 Ticket</button>
+                    <button class="tab-btn" data-tab="spec">📋 Spec</button>
+                </div>
+                <div class="output-content" id="generatedContent">
+                    <button class="copy-btn" onclick="copyText('generatedText')" title="Copy">📋</button>
+                    <div id="generatedText"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Context Section -->
+        <div class="card" id="contextCard" style="display: none;">
+            <div class="context-header">
+                <h2>🔗 Related Context</h2>
+                <div class="context-controls">
+                    <span class="context-count" id="contextCount">0 docs</span>
+                    <button class="action-btn" onclick="selectTopN(20)">📌 Top 20</button>
+                    <button class="action-btn" onclick="selectAllContext(true)">🎯 All Relevant</button>
+                    <button class="action-btn" onclick="selectAllContext(false)">☐ None</button>
+                </div>
+            </div>
+            <div class="context-list" id="contextResults"></div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                <button class="action-btn" id="totalRecallLiteBtn" style="display: none;">
+                    🧠 Total Recall Lite
+                </button>
+                <button class="action-btn" id="generateHypothesesBtn" style="display: none;">
+                    💡 Generate Hypotheses
+                </button>
+            </div>
+        </div>
+        
+        <!-- Hypotheses Section -->
+        <div class="card" id="hypothesesCard" style="display: none;">
+            <div class="context-header">
+                <h2>💡 Hypotheses</h2>
+                <div class="context-controls">
+                    <span class="context-count" id="hypothesesCount">0 hypotheses</span>
+                    <button class="action-btn" id="applyHypothesesBtn">Apply Selection</button>
+                </div>
+            </div>
+            <div class="hypotheses-list" id="hypothesesResults"></div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="whisperStatus"></div>
+                <span>Whisper</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="llmStatus"></div>
+                <span>vLLM</span>
+            </div>
+            <div id="processTime">Ready</div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

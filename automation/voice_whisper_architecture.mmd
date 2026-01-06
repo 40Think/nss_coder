@@ -1,0 +1,96 @@
+graph TB
+    %% External Dependencies
+    subgraph External["🌐 External Dependencies"]
+        AUDIO[("🎤 Audio File<br/>(any format)")]
+        FFMPEG["🔧 FFmpeg<br/>(conversion)"]
+        FFPROBE["📊 FFprobe<br/>(duration)"]
+        WHISPER_BIN["⚙️ whisper.cpp<br/>(~/whisper.cpp/build/bin/whisper-cli)"]
+        WHISPER_MODEL["🧠 GGML Model<br/>(ggml-large-v3.bin, 3GB)"]
+        GPU["🎮 NVIDIA GPU<br/>(CUDA acceleration)"]
+    end
+    
+    %% Code Dependencies
+    subgraph CodeDeps["📦 Code Dependencies"]
+        LOGGER["📝 DocsLogger<br/>(docs.utils.docs_logger)"]
+        STDLIB["🐍 Python stdlib<br/>(subprocess, tempfile, json)"]
+    end
+    
+    %% Main Processing Pipeline
+    subgraph Pipeline["🔄 VoiceWhisper Pipeline"]
+        INIT["🚀 __init__<br/>(validate paths)"]
+        HEALTH["💊 check_health<br/>(verify readiness)"]
+        
+        subgraph Transcribe["📝 transcribe() - Main Flow"]
+            VALIDATE["✅ Validate<br/>(binary/model/audio)"]
+            GET_DUR["⏱️ _get_audio_duration<br/>(ffprobe)"]
+            CONVERT["🔄 _convert_to_wav16k<br/>(ffmpeg → 16kHz WAV)"]
+            EXEC_WHISPER["🎯 Execute whisper.cpp<br/>(-l ru -oj -np)"]
+            PARSE_JSON["📋 Parse JSON<br/>(extract segments)"]
+            EXTRACT["📤 Extract Text<br/>(join segments)"]
+        end
+    end
+    
+    %% Output
+    subgraph Output["📊 Output"]
+        RESULT["📄 TranscriptionResult<br/>(text, language, duration, error)"]
+    end
+    
+    %% Temporary Files
+    subgraph Temp["🗂️ Temporary Files"]
+        TEMP_DIR["📁 /tmp/whisper_txn_*"]
+        TEMP_WAV["🎵 convert_*.wav<br/>(16kHz mono)"]
+        TEMP_JSON["📋 output.json<br/>(whisper output)"]
+    end
+    
+    %% Data Flow
+    AUDIO --> VALIDATE
+    WHISPER_BIN --> INIT
+    WHISPER_MODEL --> INIT
+    LOGGER --> INIT
+    
+    INIT --> HEALTH
+    INIT --> VALIDATE
+    
+    VALIDATE --> GET_DUR
+    AUDIO --> GET_DUR
+    FFPROBE --> GET_DUR
+    
+    GET_DUR --> CONVERT
+    AUDIO --> CONVERT
+    FFMPEG --> CONVERT
+    CONVERT --> TEMP_WAV
+    
+    TEMP_WAV --> EXEC_WHISPER
+    WHISPER_BIN --> EXEC_WHISPER
+    WHISPER_MODEL --> EXEC_WHISPER
+    GPU -.->|optional| EXEC_WHISPER
+    
+    EXEC_WHISPER --> TEMP_JSON
+    TEMP_JSON --> PARSE_JSON
+    PARSE_JSON --> EXTRACT
+    EXTRACT --> RESULT
+    
+    TEMP_WAV -.->|cleanup| TEMP_DIR
+    TEMP_JSON -.->|cleanup| TEMP_DIR
+    
+    %% Process Management
+    STDLIB -->|subprocess| EXEC_WHISPER
+    STDLIB -->|tempfile| TEMP_DIR
+    STDLIB -->|json| PARSE_JSON
+    
+    LOGGER -.->|logging| VALIDATE
+    LOGGER -.->|logging| CONVERT
+    LOGGER -.->|logging| EXEC_WHISPER
+    
+    %% Styling
+    classDef external fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef code fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef temp fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    
+    class AUDIO,FFMPEG,FFPROBE,WHISPER_BIN,WHISPER_MODEL,GPU external
+    class LOGGER,STDLIB code
+    class INIT,HEALTH,VALIDATE,GET_DUR,CONVERT,EXEC_WHISPER,PARSE_JSON,EXTRACT process
+    class TEMP_DIR,TEMP_WAV,TEMP_JSON temp
+    class RESULT output

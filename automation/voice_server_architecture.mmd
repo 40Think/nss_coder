@@ -1,0 +1,197 @@
+graph TB
+    %% External Inputs
+    subgraph Inputs["🌐 External Inputs"]
+        USER["👤 User<br/>(Browser)"]
+        AUDIO_FILE["🎤 Audio File<br/>(.ogg, .mp3, .wav)"]
+        EXT_FILES["📁 External Files<br/>(folders, 500KB max)"]
+        VOICE_INPUT["🗣️ Voice Message<br/>(Telegram)"]
+    end
+    
+    %% Dependencies
+    subgraph Deps["📦 Dependencies"]
+        WHISPER["🎙️ voice_whisper<br/>(transcription)"]
+        PROCESSOR["⚙️ voice_processor<br/>(enhancement)"]
+        DUAL_MEM["🧠 DocsDualMemory<br/>(embeddings)"]
+        SEARCH_DEP["📦 search_dependencies<br/>(dependency analysis)"]
+        SUMMARIZE["📝 summarize_docs<br/>(summaries)"]
+        SEARCH_TAG["🏷️ search_by_tag<br/>(tag search)"]
+        LLM["🤖 DocsLLMBackend<br/>(vLLM)"]
+    end
+    
+    %% Flask Server Core
+    subgraph Server["🌐 Flask Server (voice_server.py)"]
+        
+        subgraph Upload["📤 Upload Endpoints"]
+            UPLOAD_AUDIO["/upload_audio<br/>(POST)"]
+            UPLOAD_EXT["/api/external_files<br/>(POST)"]
+        end
+        
+        subgraph Transcription["🎙️ Transcription"]
+            TRANSCRIBE["/transcribe<br/>(POST)"]
+        end
+        
+        subgraph Processing["⚙️ Processing"]
+            PROCESS["/process<br/>(POST)"]
+        end
+        
+        subgraph Search["🔍 Search System"]
+            SEARCH_INT["/api/search_integrated<br/>(POST)"]
+            SEARCH_OLD["/search<br/>(POST)"]
+            REINDEX["/api/reindex<br/>(POST)"]
+            GET_SUM["/api/get_summaries<br/>(POST)"]
+            SUGGEST_TAG["/api/suggest_tags<br/>(POST)"]
+        end
+        
+        subgraph TotalRecall["🧠 Total Recall"]
+            TR["/total_recall<br/>(POST)"]
+            TR_LITE["/total_recall_lite<br/>(POST)"]
+        end
+        
+        subgraph TreeViewer["🌳 Tree Viewer"]
+            TREE["/api/project_tree<br/>(GET)"]
+            SMART["/api/smart_preselect<br/>(POST)"]
+        end
+        
+        subgraph Hypothesis["💡 Hypothesis"]
+            HYPO["/hypotheses<br/>(POST)"]
+        end
+        
+        subgraph UI["🖥️ UI Serving"]
+            INDEX["/index<br/>(GET)"]
+        end
+    end
+    
+    %% Frontend State
+    subgraph Frontend["💻 Frontend State"]
+        SCOPE["searchScope<br/>(excludedDirs, centralFiles)"]
+        CONTEXT["contextData<br/>(search results)"]
+        VARIANTS["generatedVariants<br/>(spec, ticket, prompt)"]
+    end
+    
+    %% Data Flows - Upload
+    USER --> INDEX
+    AUDIO_FILE --> UPLOAD_AUDIO
+    EXT_FILES --> UPLOAD_EXT
+    VOICE_INPUT --> UPLOAD_AUDIO
+    
+    %% Data Flows - Transcription
+    UPLOAD_AUDIO --> TRANSCRIBE
+    TRANSCRIBE --> WHISPER
+    WHISPER --> TRANSCRIBE
+    TRANSCRIBE --> Frontend
+    
+    %% Data Flows - Processing
+    Frontend --> PROCESS
+    PROCESS --> PROCESSOR
+    PROCESSOR --> DUAL_MEM
+    DUAL_MEM --> PROCESSOR
+    PROCESSOR --> PROCESS
+    PROCESS --> VARIANTS
+    
+    %% Data Flows - Search
+    Frontend --> SEARCH_INT
+    SEARCH_INT --> DUAL_MEM
+    SEARCH_INT --> PROCESSOR
+    SEARCH_INT --> SEARCH_DEP
+    SEARCH_DEP --> SEARCH_INT
+    SEARCH_INT --> CONTEXT
+    
+    CONTEXT --> GET_SUM
+    GET_SUM --> SUMMARIZE
+    SUMMARIZE --> GET_SUM
+    GET_SUM --> CONTEXT
+    
+    Frontend --> SUGGEST_TAG
+    SUGGEST_TAG --> SEARCH_TAG
+    SUGGEST_TAG --> LLM
+    LLM --> SUGGEST_TAG
+    SUGGEST_TAG --> Frontend
+    
+    Frontend --> REINDEX
+    REINDEX --> DUAL_MEM
+    
+    %% Data Flows - Total Recall
+    Frontend --> TR
+    TR --> LLM
+    LLM --> TR
+    TR --> CONTEXT
+    
+    Frontend --> TR_LITE
+    TR_LITE --> LLM
+    TR_LITE --> CONTEXT
+    
+    %% Data Flows - Tree Viewer
+    Frontend --> TREE
+    TREE --> Frontend
+    
+    SCOPE --> SMART
+    SMART --> LLM
+    LLM --> SMART
+    SMART --> SCOPE
+    
+    %% Data Flows - Hypothesis
+    CONTEXT --> HYPO
+    HYPO --> LLM
+    LLM --> HYPO
+    HYPO --> VARIANTS
+    
+    %% Multi-Channel Search Detail
+    subgraph MultiChannel["🔀 Multi-Channel Search Flow"]
+        CH1["Channel 1:<br/>🔍 Embeddings<br/>(dual_memory)"]
+        CH2["Channel 2:<br/>🔍 Semantic<br/>(processor)"]
+        CH3["Channel 3:<br/>📦 Dependencies<br/>(search_dependencies)"]
+        CH4["Channel 4:<br/>🧑 Human-in-the-Loop<br/>(centralFiles)"]
+        MERGE["🔄 Merge & Dedupe<br/>(by score)"]
+    end
+    
+    SEARCH_INT --> CH1
+    SEARCH_INT --> CH2
+    SEARCH_INT --> CH3
+    SEARCH_INT --> CH4
+    CH1 --> MERGE
+    CH2 --> MERGE
+    CH3 --> MERGE
+    CH4 --> MERGE
+    MERGE --> CONTEXT
+    
+    %% Security Layer
+    subgraph Security["🔒 Security"]
+        REGEX["Regex Validation<br/>(block: ; | & rm sudo)"]
+    end
+    
+    SEARCH_INT --> REGEX
+    TR --> REGEX
+    
+    %% Outputs
+    subgraph Outputs["📊 Outputs"]
+        JSON_RESP["📋 JSON Response<br/>(success, results, error)"]
+        HTML_UI["🌐 HTML UI<br/>(VoicePal Interface)"]
+        TRANSCRIPTION["📝 Transcription<br/>(text, language)"]
+        ENHANCED["✨ Enhanced Text<br/>(corrected, expanded)"]
+        FORMATTED["📄 Formatted Output<br/>(spec, ticket, prompt)"]
+    end
+    
+    INDEX --> HTML_UI
+    TRANSCRIBE --> TRANSCRIPTION
+    PROCESS --> ENHANCED
+    PROCESS --> FORMATTED
+    SEARCH_INT --> JSON_RESP
+    TR --> JSON_RESP
+    HYPO --> JSON_RESP
+    
+    %% Styling
+    classDef input fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef endpoint fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef frontend fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    classDef security fill:#ffebee,stroke:#b71c1c,stroke-width:3px
+    classDef channel fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    
+    class USER,AUDIO_FILE,EXT_FILES,VOICE_INPUT input
+    class WHISPER,PROCESSOR,DUAL_MEM,SEARCH_DEP,SUMMARIZE,SEARCH_TAG,LLM dep
+    class UPLOAD_AUDIO,UPLOAD_EXT,TRANSCRIBE,PROCESS,SEARCH_INT,SEARCH_OLD,REINDEX,GET_SUM,SUGGEST_TAG,TR,TR_LITE,TREE,SMART,HYPO,INDEX endpoint
+    class SCOPE,CONTEXT,VARIANTS frontend
+    class JSON_RESP,HTML_UI,TRANSCRIPTION,ENHANCED,FORMATTED output
+    class REGEX security
+    class CH1,CH2,CH3,CH4,MERGE channel

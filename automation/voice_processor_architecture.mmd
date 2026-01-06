@@ -1,0 +1,179 @@
+graph TB
+    %% Inputs
+    subgraph Inputs["🎤 Inputs"]
+        RAW_TEXT["📝 Raw Transcribed Text<br/>(Russian, with ASR errors)"]
+        FORMAT_TYPE["🎨 Format Type<br/>(as_is, enhanced, prompt, ticket, spec)"]
+        PRE_CONTEXT["📂 Pre-selected Context<br/>(centralFiles from Tree Viewer)"]
+    end
+    
+    %% Dependencies
+    subgraph Deps["📦 Dependencies"]
+        LLM_BACKEND["🤖 DocsLLMBackend<br/>(vLLM endpoint)"]
+        DUAL_MEM["🧠 DocsDualMemory<br/>(embeddings search)"]
+        UNIFIED["🔍 UnifiedSearcher<br/>(fallback search)"]
+        LOGGER["📝 DocsLogger<br/>(paranoid logging)"]
+    end
+    
+    %% Main Processing Pipeline
+    subgraph Pipeline["⚙️ VoiceProcessor Pipeline"]
+        
+        subgraph Step1["Step 1: Enhancement"]
+            ENHANCE["enhance_text()<br/>Correct ASR errors<br/>Expand by ~20%"]
+            ENHANCE_PROMPT["ENHANCE_PROMPT_RU<br/>(temperature: 0.3)"]
+        end
+        
+        subgraph Step2["Step 2: Translation"]
+            TRANSLATE["translate_to_english()<br/>Russian → English"]
+            TRANSLATE_PROMPT["TRANSLATE_PROMPT<br/>(temperature: 0.1)"]
+        end
+        
+        subgraph Step3["Step 3: Context Search"]
+            SEARCH_CTX["search_context()<br/>(top_k=5)"]
+            
+            subgraph SearchChannels["Search Channels"]
+                EMB_DESC["Embeddings:<br/>Descriptions<br/>(dual_memory)"]
+                EMB_CODE["Embeddings:<br/>Code<br/>(dual_memory)"]
+                FALLBACK["Fallback:<br/>UnifiedSearcher"]
+            end
+            
+            DEDUPE["Deduplicate<br/>& Sort by Score"]
+        end
+        
+        subgraph Step4["Step 4: Formatting"]
+            FORMAT_ROUTER["Format Router<br/>(switch on format_type)"]
+            
+            FORMAT_PROMPT["format_as_prompt()<br/>AI Prompt Template"]
+            FORMAT_TICKET["format_as_ticket()<br/>Ticket Template"]
+            FORMAT_SPEC["format_as_spec()<br/>Spec Template"]
+            FORMAT_ENHANCED["Use Enhanced Text"]
+        end
+        
+        subgraph ContextFormat["Context Formatting"]
+            BUILD_CTX["_format_context_for_prompt()<br/>Add source attribution"]
+            
+            subgraph SourceLabels["Source Labels"]
+                HUMAN["🧑 Human-in-the-Loop<br/>(100%)"]
+                TR["🧠 Total Recall<br/>(95%)"]
+                SMART["⭐ Smart Select<br/>(95%)"]
+                EMB["🔍 Embeddings<br/>(70-80%)"]
+                EXT["📁 External"]
+            end
+        end
+    end
+    
+    %% Prompt Templates
+    subgraph Templates["📋 Prompt Templates"]
+        TMPL_ENHANCE["ENHANCE_PROMPT_RU<br/>(ASR correction + expansion)"]
+        TMPL_TRANSLATE["TRANSLATE_PROMPT<br/>(RU → EN)"]
+        TMPL_PROMPT["FORMAT_PROMPT_TEMPLATE<br/>(with context & sources)"]
+        TMPL_TICKET["FORMAT_TICKET_TEMPLATE<br/>(with context & sources)"]
+        TMPL_SPEC["FORMAT_SPEC_TEMPLATE<br/>(with context & sources)"]
+    end
+    
+    %% Output
+    subgraph Output["📊 ProcessingResult"]
+        RESULT["ProcessingResult<br/>━━━━━━━━━━━━━━━━<br/>original_ru: str<br/>original_en: str<br/>enhanced: str<br/>formatted: str<br/>format_type: str<br/>━━━━━━━━━━━━━━━━<br/>context_results: List<br/>annotated_context: List<br/>context_summary: str<br/>━━━━━━━━━━━━━━━━<br/>processing_time_sec: float<br/>llm_calls: int<br/>error: Optional[str]"]
+    end
+    
+    %% Data Flow - Main Pipeline
+    RAW_TEXT --> ENHANCE
+    FORMAT_TYPE --> FORMAT_ROUTER
+    
+    ENHANCE --> ENHANCE_PROMPT
+    ENHANCE_PROMPT --> LLM_BACKEND
+    LLM_BACKEND --> ENHANCE
+    
+    ENHANCE --> TRANSLATE
+    TRANSLATE --> TRANSLATE_PROMPT
+    TRANSLATE_PROMPT --> LLM_BACKEND
+    LLM_BACKEND --> TRANSLATE
+    
+    TRANSLATE --> SEARCH_CTX
+    PRE_CONTEXT --> SEARCH_CTX
+    
+    %% Search Flow
+    SEARCH_CTX --> EMB_DESC
+    SEARCH_CTX --> EMB_CODE
+    EMB_DESC --> DUAL_MEM
+    EMB_CODE --> DUAL_MEM
+    DUAL_MEM --> EMB_DESC
+    DUAL_MEM --> EMB_CODE
+    
+    EMB_DESC --> DEDUPE
+    EMB_CODE --> DEDUPE
+    
+    SEARCH_CTX -.->|on error| FALLBACK
+    FALLBACK --> UNIFIED
+    UNIFIED --> FALLBACK
+    FALLBACK -.-> DEDUPE
+    
+    DEDUPE --> BUILD_CTX
+    
+    %% Source Attribution
+    BUILD_CTX --> HUMAN
+    BUILD_CTX --> TR
+    BUILD_CTX --> SMART
+    BUILD_CTX --> EMB
+    BUILD_CTX --> EXT
+    
+    HUMAN --> BUILD_CTX
+    TR --> BUILD_CTX
+    SMART --> BUILD_CTX
+    EMB --> BUILD_CTX
+    EXT --> BUILD_CTX
+    
+    %% Formatting Flow
+    BUILD_CTX --> FORMAT_ROUTER
+    TRANSLATE --> FORMAT_ROUTER
+    
+    FORMAT_ROUTER --> FORMAT_ENHANCED
+    FORMAT_ROUTER --> FORMAT_PROMPT
+    FORMAT_ROUTER --> FORMAT_TICKET
+    FORMAT_ROUTER --> FORMAT_SPEC
+    
+    FORMAT_PROMPT --> TMPL_PROMPT
+    FORMAT_TICKET --> TMPL_TICKET
+    FORMAT_SPEC --> TMPL_SPEC
+    
+    TMPL_PROMPT --> LLM_BACKEND
+    TMPL_TICKET --> LLM_BACKEND
+    TMPL_SPEC --> LLM_BACKEND
+    
+    LLM_BACKEND --> FORMAT_PROMPT
+    LLM_BACKEND --> FORMAT_TICKET
+    LLM_BACKEND --> FORMAT_SPEC
+    
+    %% Output Assembly
+    FORMAT_ENHANCED --> RESULT
+    FORMAT_PROMPT --> RESULT
+    FORMAT_TICKET --> RESULT
+    FORMAT_SPEC --> RESULT
+    
+    ENHANCE --> RESULT
+    TRANSLATE --> RESULT
+    BUILD_CTX --> RESULT
+    
+    %% Logging
+    LOGGER -.->|log| ENHANCE
+    LOGGER -.->|log| TRANSLATE
+    LOGGER -.->|log| SEARCH_CTX
+    LOGGER -.->|log| FORMAT_ROUTER
+    
+    %% Template Usage
+    TMPL_ENHANCE -.-> ENHANCE_PROMPT
+    TMPL_TRANSLATE -.-> TRANSLATE_PROMPT
+    
+    %% Styling
+    classDef input fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef template fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    classDef source fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    
+    class RAW_TEXT,FORMAT_TYPE,PRE_CONTEXT input
+    class LLM_BACKEND,DUAL_MEM,UNIFIED,LOGGER dep
+    class ENHANCE,TRANSLATE,SEARCH_CTX,FORMAT_ROUTER,FORMAT_PROMPT,FORMAT_TICKET,FORMAT_SPEC,FORMAT_ENHANCED,BUILD_CTX,DEDUPE,EMB_DESC,EMB_CODE,FALLBACK process
+    class TMPL_ENHANCE,TMPL_TRANSLATE,TMPL_PROMPT,TMPL_TICKET,TMPL_SPEC,ENHANCE_PROMPT,TRANSLATE_PROMPT template
+    class RESULT output
+    class HUMAN,TR,SMART,EMB,EXT source

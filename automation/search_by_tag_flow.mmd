@@ -1,0 +1,100 @@
+graph TB
+    %% Input Dependencies
+    subgraph inputs["📥 INPUT DEPENDENCIES"]
+        docs_dir["📁 docs/ directory<br/>(markdown, python, yaml)"]
+        proc_dir["📁 processing/ directory<br/>(python files)"]
+        utils_dir["📁 utils/ directory<br/>(python files)"]
+        scripts_dir["📁 scripts/ directory<br/>(python files)"]
+    end
+    
+    %% Code Dependencies
+    subgraph code_deps["💻 CODE DEPENDENCIES"]
+        docs_logger["docs.utils.docs_logger<br/>DocsLogger"]
+        pathlib["pathlib.Path"]
+        re_module["re (regex)"]
+        dataclasses["dataclasses"]
+    end
+    
+    %% Main Components
+    subgraph main["🔍 SEARCH_BY_TAG CORE"]
+        cli["🖥️ CLI Interface<br/>argparse"]
+        searcher["🔎 TagSearcher<br/>(project_root)"]
+        
+        subgraph operations["OPERATIONS"]
+            search_op["search()<br/>Find tag in all files"]
+            search_file["_search_file()<br/>Search single file"]
+            find_tags["find_all_tags()<br/>List all tags"]
+        end
+    end
+    
+    %% Data Flow
+    subgraph dataflow["📊 DATA FLOW"]
+        tag_match["TagMatch<br/>dataclass"]
+        results["List[TagMatch]"]
+        tag_list["List[str]<br/>(sorted tags)"]
+    end
+    
+    %% Output Dependencies
+    subgraph outputs["📤 OUTPUT DEPENDENCIES"]
+        stdout["💬 stdout<br/>(console output)"]
+        output_file["📄 output file<br/>(optional --output)"]
+        logs["📋 docs/logs/<br/>(DocsLogger)"]
+    end
+    
+    %% Connections - Input to Core
+    docs_dir --> searcher
+    proc_dir --> searcher
+    utils_dir --> searcher
+    scripts_dir --> searcher
+    
+    %% Code Dependencies to Core
+    docs_logger --> cli
+    docs_logger --> search_file
+    pathlib --> searcher
+    re_module --> find_tags
+    dataclasses --> tag_match
+    
+    %% CLI Flow
+    cli -->|"--tag"| search_op
+    cli -->|"--list-tags"| find_tags
+    cli -->|"--show-context"| search_op
+    
+    %% Search Operations
+    search_op --> search_file
+    search_file -->|"for each file"| search_file
+    
+    %% Data Flow
+    search_file -->|"creates"| tag_match
+    tag_match -->|"accumulates"| results
+    find_tags -->|"extracts"| tag_list
+    
+    %% Algorithm Details
+    search_file -.->|"1. Read file UTF-8"| search_file
+    search_file -.->|"2. Find <!--TAG:name-->"| search_file
+    search_file -.->|"3. Find <!--/TAG:name-->"| search_file
+    search_file -.->|"4. Extract content"| search_file
+    search_file -.->|"5. Calculate line numbers"| search_file
+    search_file -.->|"6. Extract context (optional)"| search_file
+    
+    %% Output Flow
+    results --> stdout
+    results --> output_file
+    tag_list --> stdout
+    
+    %% Logging
+    search_op --> logs
+    search_file --> logs
+    cli --> logs
+    
+    %% Styling
+    classDef inputStyle fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef codeStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef coreStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef dataStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef outputStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class docs_dir,proc_dir,utils_dir,scripts_dir inputStyle
+    class docs_logger,pathlib,re_module,dataclasses codeStyle
+    class cli,searcher,search_op,search_file,find_tags coreStyle
+    class tag_match,results,tag_list dataStyle
+    class stdout,output_file,logs outputStyle

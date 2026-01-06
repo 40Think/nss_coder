@@ -1,0 +1,169 @@
+```mermaid
+graph TB
+    %% ============================================================================
+    %% INPUTS - All Dependency Types
+    %% ============================================================================
+    
+    subgraph INPUTS["📥 INPUTS"]
+        direction TB
+        
+        subgraph CODE_DEPS["💻 Code Dependencies"]
+            LOGGER["docs.utils.docs_logger<br/>DocsLogger"]
+            LLM_BACKEND["docs.utils.docs_llm_backend<br/>DocsLLMBackend"]
+            DUAL_MEM["docs.utils.docs_dual_memory<br/>DocsDualMemoryIndex"]
+        end
+        
+        subgraph DATA_DEPS["📂 Data Dependencies"]
+            PY_FILES["Python Source Files<br/>*.py"]
+            PROJECT_STRUCT["Project Structure<br/>processing/, utils/, scripts/"]
+        end
+        
+        subgraph EXTERNAL_DEPS["🌐 External Dependencies"]
+            VLLM_API["vLLM API<br/>(optional)"]
+        end
+        
+        subgraph CONFIG_DEPS["⚙️ Config Dependencies"]
+            NO_CONFIG["None<br/>(hardcoded paths)"]
+        end
+    end
+    
+    %% ============================================================================
+    %% CORE PROCESSING
+    %% ============================================================================
+    
+    subgraph CORE["🔬 CORE PROCESSING"]
+        direction TB
+        
+        CLI["🎯 CLI Entry Point<br/>argparse"]
+        INIT["🏗️ CallGraphGenerator<br/>__init__()"]
+        
+        subgraph ANALYSIS["📊 Analysis Phase"]
+            direction LR
+            ANALYZE_FILE["analyze_file()<br/>AST Parsing"]
+            ANALYZE_DIR["analyze_directory()<br/>Recursive Scan"]
+            ANALYZE_PROJ["analyze_project()<br/>Full Project"]
+        end
+        
+        subgraph DATA_STRUCT["🗂️ Data Structures"]
+            FUNC_REGISTRY["functions: Dict<br/>FunctionNode registry"]
+            FUNC_NODE["FunctionNode<br/>name, file, line<br/>calls[], called_by[]"]
+        end
+        
+        BUILD_REV["🔄 build_reverse_edges()<br/>Create called_by links"]
+        
+        subgraph ENHANCEMENTS["✨ Enhancements (TICKET #04)"]
+            direction TB
+            METRICS["📈 calculate_metrics()<br/>density, centrality<br/>cycles, orphans"]
+            LLM_ANALYZE["🤖 analyze_with_llm()<br/>AI insights"]
+            DUAL_INDEX["💾 index_in_dual_memory()<br/>Semantic search"]
+            AUTO_REGEN["⏱️ should_regenerate()<br/>Timestamp check"]
+        end
+        
+        subgraph OUTPUT_GEN["📤 Output Generation"]
+            direction LR
+            GEN_MERMAID["generate_mermaid()<br/>Flowchart"]
+            GEN_GRAPHVIZ["generate_graphviz()<br/>DOT format"]
+            GEN_JSON["generate_json()<br/>Structured data"]
+        end
+    end
+    
+    %% ============================================================================
+    %% OUTPUTS
+    %% ============================================================================
+    
+    subgraph OUTPUTS["📤 OUTPUTS"]
+        direction TB
+        
+        subgraph OUTPUT_FILES["📄 Output Files"]
+            MERMAID_OUT["Mermaid Diagram<br/>.mmd"]
+            GRAPHVIZ_OUT["Graphviz DOT<br/>.dot"]
+            JSON_OUT["JSON Data<br/>.json"]
+        end
+        
+        subgraph OUTPUT_DATA["📊 Output Data"]
+            GRAPH_DATA["Call Graph<br/>functions, edges"]
+            METRICS_DATA["Metrics<br/>density, cycles"]
+            LLM_DATA["LLM Analysis<br/>insights"]
+        end
+        
+        subgraph MEMORY_OUTPUT["💾 Memory System"]
+            DUAL_MEM_INDEX["Dual Memory Index<br/>docs/memory/indexes/"]
+        end
+        
+        subgraph LOGS_OUTPUT["📝 Logs"]
+            DOCS_LOGS["DocsLogger Output<br/>docs/logs/"]
+        end
+    end
+    
+    %% ============================================================================
+    %% MAIN FLOW
+    %% ============================================================================
+    
+    %% Inputs to Core
+    PY_FILES --> CLI
+    PROJECT_STRUCT --> CLI
+    LOGGER --> INIT
+    
+    CLI --> INIT
+    CLI --> AUTO_REGEN
+    
+    %% Analysis Flow
+    INIT --> ANALYZE_FILE
+    INIT --> ANALYZE_DIR
+    INIT --> ANALYZE_PROJ
+    
+    ANALYZE_FILE --> FUNC_REGISTRY
+    ANALYZE_DIR --> ANALYZE_FILE
+    ANALYZE_PROJ --> ANALYZE_DIR
+    
+    FUNC_REGISTRY --> FUNC_NODE
+    FUNC_NODE --> BUILD_REV
+    
+    %% Enhancement Flow
+    BUILD_REV --> METRICS
+    BUILD_REV --> OUTPUT_GEN
+    
+    METRICS --> GEN_JSON
+    
+    LLM_BACKEND -.->|optional| LLM_ANALYZE
+    VLLM_API -.->|optional| LLM_ANALYZE
+    LLM_ANALYZE -.->|optional| GEN_MERMAID
+    LLM_ANALYZE -.->|optional| GEN_JSON
+    
+    DUAL_MEM -.->|optional| DUAL_INDEX
+    GEN_JSON -.->|optional| DUAL_INDEX
+    
+    %% Output Generation
+    FUNC_REGISTRY --> GEN_MERMAID
+    FUNC_REGISTRY --> GEN_GRAPHVIZ
+    FUNC_REGISTRY --> GEN_JSON
+    
+    %% Outputs
+    GEN_MERMAID --> MERMAID_OUT
+    GEN_GRAPHVIZ --> GRAPHVIZ_OUT
+    GEN_JSON --> JSON_OUT
+    
+    GEN_JSON --> GRAPH_DATA
+    METRICS --> METRICS_DATA
+    LLM_ANALYZE -.->|optional| LLM_DATA
+    
+    DUAL_INDEX -.->|optional| DUAL_MEM_INDEX
+    LOGGER --> DOCS_LOGS
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef inputClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef coreClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef outputClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef optionalClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,stroke-dasharray: 5 5
+    classDef dataClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class LOGGER,LLM_BACKEND,DUAL_MEM,PY_FILES,PROJECT_STRUCT,VLLM_API,NO_CONFIG inputClass
+    class CLI,INIT,ANALYZE_FILE,ANALYZE_DIR,ANALYZE_PROJ,BUILD_REV coreClass
+    class FUNC_REGISTRY,FUNC_NODE dataClass
+    class METRICS,LLM_ANALYZE,DUAL_INDEX,AUTO_REGEN optionalClass
+    class GEN_MERMAID,GEN_GRAPHVIZ,GEN_JSON coreClass
+    class MERMAID_OUT,GRAPHVIZ_OUT,JSON_OUT,GRAPH_DATA,METRICS_DATA,LLM_DATA,DUAL_MEM_INDEX,DOCS_LOGS outputClass
+```

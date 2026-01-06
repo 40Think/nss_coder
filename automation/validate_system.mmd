@@ -1,0 +1,198 @@
+flowchart TB
+    %% ============================================================================
+    %% VALIDATE_SYSTEM.PY - Multi-Tier Adaptive Validation System
+    %% ============================================================================
+    
+    %% Entry Point
+    START([CLI Entry Point]) --> PARSE_ARGS[Parse Arguments<br/>--paranoia 0-5 default=5<br/>--project-root]
+    
+    %% Paranoia Level Selection
+    PARSE_ARGS --> LEVEL_CHECK{Paranoia Level?}
+    LEVEL_CHECK -->|0 - Auto| AUTO_DETECT[Auto-Detect Level<br/>Based on File Count]
+    LEVEL_CHECK -->|1-5 Manual| MANUAL_LEVEL[Use Manual Level]
+    
+    AUTO_DETECT --> COUNT_FILES[Count Project Files<br/>.py + .md]
+    COUNT_FILES --> SIZE_CALC{File Count?}
+    SIZE_CALC -->|< 50| SET_L1[Level 1: Minimal]
+    SIZE_CALC -->|50-200| SET_L2[Level 2: Standard]
+    SIZE_CALC -->|200-500| SET_L3[Level 3: Thorough]
+    SIZE_CALC -->|500-1000| SET_L4[Level 4: Paranoid]
+    SIZE_CALC -->|> 1000| SET_L5[Level 5: Maximum]
+    
+    SET_L1 --> INIT_SYSTEM
+    SET_L2 --> INIT_SYSTEM
+    SET_L3 --> INIT_SYSTEM
+    SET_L4 --> INIT_SYSTEM
+    SET_L5 --> INIT_SYSTEM
+    MANUAL_LEVEL --> INIT_SYSTEM
+    
+    %% System Initialization
+    INIT_SYSTEM[Initialize AdaptiveValidationSystem<br/>Create output dirs] --> CONFIG_TIERS[Configure Tiers<br/>Based on Level]
+    
+    %% Tier Configuration
+    CONFIG_TIERS --> TIER_CHECK{Which Tiers<br/>Enabled?}
+    
+    %% ============================================================================
+    %% TIER 1: ALGORITHMIC VALIDATION
+    %% ============================================================================
+    
+    TIER_CHECK -->|Tier 1<br/>Always| T1_START[Tier1Validator]
+    
+    T1_START --> T1_SCRIPT[Run validate_docs.py<br/>subprocess]
+    
+    %% Layer 1: Code Dependencies
+    T1_SCRIPT -.->|Layer 1: Code| T1_L1[validate_docs.py<br/>imports, functions]
+    
+    %% Layer 2: Config Dependencies
+    T1_SCRIPT -.->|Layer 2: Config| T1_L2[CLI args:<br/>--report /dev/stdout]
+    
+    %% Layer 3: Data Dependencies
+    T1_SCRIPT -.->|Layer 3: Data| T1_L3[Read: docs/**/*.md<br/>Write: stdout]
+    
+    %% Layer 4: External Dependencies
+    T1_SCRIPT -.->|Layer 4: External| T1_L4[subprocess.run<br/>timeout=60s]
+    
+    T1_SCRIPT --> T1_PARSE[Parse Markdown Output<br/>Extract issues]
+    T1_PARSE --> T1_RESULT[ValidationResult<br/>tier=1, tool=validate_docs]
+    T1_RESULT --> COLLECT_RESULTS
+    
+    %% ============================================================================
+    %% TIER 2: EXTERNAL TOOLS
+    %% ============================================================================
+    
+    TIER_CHECK -->|Tier 2<br/>Level >= 2| T2_START[Tier2Validator]
+    
+    T2_START --> T2_RUFF[Run ruff]
+    T2_START --> T2_MYPY[Run mypy]
+    T2_START --> T2_MDLINT[Run markdownlint]
+    
+    %% RUFF
+    T2_RUFF --> T2_RUFF_CHECK{ruff<br/>installed?}
+    T2_RUFF_CHECK -->|Yes| T2_RUFF_RUN[ruff check<br/>--output-format json]
+    T2_RUFF_CHECK -->|No| T2_RUFF_SKIP[SKIP Result]
+    
+    T2_RUFF_RUN -.->|Layer 4: External| T2_RUFF_L4[External: ruff binary<br/>pip install ruff]
+    T2_RUFF_RUN -.->|Layer 3: Data| T2_RUFF_L3[Read: **/*.py<br/>Write: JSON stdout]
+    
+    T2_RUFF_RUN --> T2_RUFF_PARSE[Parse JSON<br/>Extract lint issues]
+    T2_RUFF_PARSE --> T2_RUFF_RESULT[ValidationResult<br/>tier=2, tool=ruff]
+    T2_RUFF_SKIP --> T2_RUFF_RESULT
+    T2_RUFF_RESULT --> COLLECT_RESULTS
+    
+    %% MYPY
+    T2_MYPY --> T2_MYPY_CHECK{mypy<br/>installed?}
+    T2_MYPY_CHECK -->|Yes| T2_MYPY_RUN[mypy<br/>--ignore-missing-imports]
+    T2_MYPY_CHECK -->|No| T2_MYPY_SKIP[SKIP Result]
+    
+    T2_MYPY_RUN -.->|Layer 4: External| T2_MYPY_L4[External: mypy binary<br/>pip install mypy]
+    T2_MYPY_RUN -.->|Layer 3: Data| T2_MYPY_L3[Read: **/*.py<br/>Write: stdout]
+    
+    T2_MYPY_RUN --> T2_MYPY_PARSE[Parse Output<br/>Extract type errors]
+    T2_MYPY_PARSE --> T2_MYPY_RESULT[ValidationResult<br/>tier=2, tool=mypy]
+    T2_MYPY_SKIP --> T2_MYPY_RESULT
+    T2_MYPY_RESULT --> COLLECT_RESULTS
+    
+    %% MARKDOWNLINT
+    T2_MDLINT --> T2_MDLINT_CHECK{markdownlint<br/>installed?}
+    T2_MDLINT_CHECK -->|Yes| T2_MDLINT_RUN[markdownlint docs/]
+    T2_MDLINT_CHECK -->|No| T2_MDLINT_SKIP[SKIP Result]
+    
+    T2_MDLINT_RUN -.->|Layer 4: External| T2_MDLINT_L4[External: markdownlint<br/>npm install -g]
+    T2_MDLINT_RUN -.->|Layer 3: Data| T2_MDLINT_L3[Read: docs/**/*.md<br/>Write: stdout]
+    
+    T2_MDLINT_RUN --> T2_MDLINT_PARSE[Parse Output<br/>Extract format issues]
+    T2_MDLINT_PARSE --> T2_MDLINT_RESULT[ValidationResult<br/>tier=2, tool=markdownlint]
+    T2_MDLINT_SKIP --> T2_MDLINT_RESULT
+    T2_MDLINT_RESULT --> COLLECT_RESULTS
+    
+    %% ============================================================================
+    %% TIER 3: AI VALIDATION
+    %% ============================================================================
+    
+    TIER_CHECK -->|Tier 3<br/>Level >= 3| T3_START[Tier3Validator]
+    
+    T3_START --> T3_SCOPE{AI Scope?}
+    T3_SCOPE -->|changed| T3_CHANGED[Validate Changed Files]
+    T3_SCOPE -->|all| T3_ALL[Validate All Files]
+    
+    T3_CHANGED --> T3_RUN[Run local_ai_verifier.py]
+    T3_ALL --> T3_RUN
+    
+    T3_RUN -.->|Layer 1: Code| T3_L1[utils/local_ai_verifier.py<br/>imports, functions]
+    T3_RUN -.->|Layer 2: Config| T3_L2[CLI args:<br/>--commits 1 if all]
+    T3_RUN -.->|Layer 3: Data| T3_L3[Read: git diff<br/>Write: markdown report]
+    T3_RUN -.->|Layer 4: External| T3_L4[subprocess.run<br/>timeout=300s<br/>OpenAI API]
+    
+    T3_RUN --> T3_PARSE[Parse AI Report<br/>Extract issues]
+    T3_PARSE --> T3_RESULT[ValidationResult<br/>tier=3, tool=ai_verifier]
+    T3_RESULT --> COLLECT_RESULTS
+    
+    %% ============================================================================
+    %% RESULTS AGGREGATION
+    %% ============================================================================
+    
+    COLLECT_RESULTS[Collect All Results] --> TICKET_GEN[TicketGenerator]
+    
+    TICKET_GEN --> LOAD_HASHES[Load Existing Ticket Hashes<br/>For Deduplication]
+    LOAD_HASHES -.->|Layer 3: Data| TG_L3_READ[Read: docs/technical_debt/tickets/*.md<br/>Extract ticket_hash from frontmatter]
+    
+    LOAD_HASHES --> FILTER_ISSUES[Filter Issues<br/>ERROR + WARNING only]
+    FILTER_ISSUES --> HASH_LOOP{For Each Issue}
+    
+    HASH_LOOP --> CALC_HASH[Calculate MD5 Hash<br/>file:line:message]
+    CALC_HASH --> CHECK_DUP{Duplicate?}
+    CHECK_DUP -->|Yes| HASH_LOOP
+    CHECK_DUP -->|No| CREATE_TICKET[Create Ticket File<br/>TICKET_timestamp_file_category.md]
+    
+    CREATE_TICKET -.->|Layer 3: Data| TG_L3_WRITE[Write: docs/technical_debt/tickets/<br/>YAML frontmatter + markdown]
+    
+    CREATE_TICKET --> HASH_LOOP
+    HASH_LOOP -->|Done| BUILD_REPORT[Build ValidationReport]
+    
+    %% ============================================================================
+    %% REPORT GENERATION
+    %% ============================================================================
+    
+    BUILD_REPORT --> CALC_STATUS{Overall Status?}
+    CALC_STATUS -->|Errors > 0| STATUS_FAIL[Status: FAIL]
+    CALC_STATUS -->|Warnings > 0| STATUS_WARN[Status: WARN]
+    CALC_STATUS -->|All Clear| STATUS_PASS[Status: PASS]
+    
+    STATUS_FAIL --> SAVE_REPORTS
+    STATUS_WARN --> SAVE_REPORTS
+    STATUS_PASS --> SAVE_REPORTS
+    
+    SAVE_REPORTS[Save Reports] --> SAVE_MD[Save Markdown Report<br/>validation_report_timestamp.md]
+    SAVE_REPORTS --> SAVE_JSON[Save JSON Report<br/>validation_report_timestamp.json]
+    
+    SAVE_MD -.->|Layer 3: Data| REPORT_L3_MD[Write: output/validation/<br/>markdown format]
+    SAVE_JSON -.->|Layer 3: Data| REPORT_L3_JSON[Write: output/validation/<br/>JSON format]
+    
+    SAVE_MD --> PRINT_SUMMARY[Print Summary to Console]
+    SAVE_JSON --> PRINT_SUMMARY
+    
+    %% ============================================================================
+    %% EXIT
+    %% ============================================================================
+    
+    PRINT_SUMMARY --> EXIT_CHECK{Status?}
+    EXIT_CHECK -->|FAIL/ERROR| EXIT_1([Exit Code 1])
+    EXIT_CHECK -->|PASS/WARN| EXIT_0([Exit Code 0])
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef tier1Class fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef tier2Class fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef tier3Class fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef ticketClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef reportClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef layerClass fill:#fce4ec,stroke:#880e4f,stroke-width:1px,stroke-dasharray: 5 5
+    
+    class T1_START,T1_SCRIPT,T1_PARSE,T1_RESULT tier1Class
+    class T2_START,T2_RUFF,T2_RUFF_RUN,T2_RUFF_PARSE,T2_RUFF_RESULT,T2_MYPY,T2_MYPY_RUN,T2_MYPY_PARSE,T2_MYPY_RESULT,T2_MDLINT,T2_MDLINT_RUN,T2_MDLINT_PARSE,T2_MDLINT_RESULT tier2Class
+    class T3_START,T3_RUN,T3_PARSE,T3_RESULT tier3Class
+    class TICKET_GEN,LOAD_HASHES,FILTER_ISSUES,CREATE_TICKET ticketClass
+    class BUILD_REPORT,SAVE_REPORTS,SAVE_MD,SAVE_JSON,PRINT_SUMMARY reportClass
+    class T1_L1,T1_L2,T1_L3,T1_L4,T2_RUFF_L3,T2_RUFF_L4,T2_MYPY_L3,T2_MYPY_L4,T2_MDLINT_L3,T2_MDLINT_L4,T3_L1,T3_L2,T3_L3,T3_L4,TG_L3_READ,TG_L3_WRITE,REPORT_L3_MD,REPORT_L3_JSON layerClass

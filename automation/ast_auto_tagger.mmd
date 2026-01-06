@@ -1,0 +1,172 @@
+%% AST Auto-Tagger Workflow Diagram
+%% Shows data flows, algorithm logic, and all dependency types
+
+graph TB
+    %% ============================================================================
+    %% INPUTS - Data Dependencies
+    %% ============================================================================
+    subgraph INPUTS["📥 INPUTS (Data Dependencies)"]
+        PY_FILES["Python Files<br/>.py source code"]
+        EXISTING_TAGS["Existing Tags<br/><!--TAG:...-->"]
+    end
+
+    %% ============================================================================
+    %% CONFIGURATION - Config Dependencies
+    %% ============================================================================
+    subgraph CONFIG["⚙️ CONFIGURATION (Config Dependencies)"]
+        SCHEMA["tag_schema.yaml<br/>Validation Rules<br/>Auto-tagging Patterns"]
+    end
+
+    %% ============================================================================
+    %% CODE DEPENDENCIES
+    %% ============================================================================
+    subgraph CODE_DEPS["📦 CODE DEPENDENCIES"]
+        LOGGER["DocsLogger<br/>docs.utils.docs_logger"]
+        AST_LIB["Python AST<br/>ast module"]
+        YAML_LIB["YAML Parser<br/>yaml module"]
+    end
+
+    %% ============================================================================
+    %% MAIN PROCESSING FLOW
+    %% ============================================================================
+    START([CLI Entry Point]) --> PARSE_ARGS[Parse Arguments<br/>--file/--directory/--all]
+    
+    PARSE_ARGS --> INIT[Initialize ASTAutoTagger<br/>Load Schema]
+    SCHEMA -.->|config| INIT
+    YAML_LIB -.->|code| INIT
+    LOGGER -.->|code| INIT
+    
+    INIT --> COLLECT[Collect Python Files<br/>Based on Mode]
+    PY_FILES -->|data| COLLECT
+    
+    COLLECT --> ANALYZE_LOOP{For Each File}
+    
+    %% ============================================================================
+    %% ANALYSIS PHASE
+    %% ============================================================================
+    ANALYZE_LOOP --> READ_FILE[Read File Content<br/>UTF-8 encoding]
+    READ_FILE --> EXTRACT_EXISTING[Extract Existing Tags<br/>Regex Pattern Match]
+    EXISTING_TAGS -.->|data| EXTRACT_EXISTING
+    
+    EXTRACT_EXISTING --> PARSE_AST[Parse AST<br/>ast.parse]
+    AST_LIB -.->|code| PARSE_AST
+    
+    PARSE_AST -->|SyntaxError?| ERROR_HANDLE{Syntax<br/>Error?}
+    ERROR_HANDLE -->|Yes| LOG_ERROR[Log Warning<br/>Return Empty Analysis]
+    ERROR_HANDLE -->|No| EXTRACT_STRUCTURE
+    
+    LOG_ERROR --> ANALYZE_LOOP
+    LOGGER -.->|code| LOG_ERROR
+    
+    %% ============================================================================
+    %% STRUCTURE EXTRACTION
+    %% ============================================================================
+    subgraph EXTRACTION["🔍 AST EXTRACTION"]
+        EXTRACT_STRUCTURE[Extract Structure]
+        EXTRACT_CLASSES["_extract_classes()<br/>Find ClassDef nodes"]
+        EXTRACT_FUNCS["_extract_functions()<br/>Top-level FunctionDef"]
+        EXTRACT_IMPORTS["_extract_imports()<br/>Import + ImportFrom"]
+        
+        EXTRACT_STRUCTURE --> EXTRACT_CLASSES
+        EXTRACT_STRUCTURE --> EXTRACT_FUNCS
+        EXTRACT_STRUCTURE --> EXTRACT_IMPORTS
+    end
+    
+    AST_LIB -.->|code| EXTRACTION
+    
+    %% ============================================================================
+    %% TAG SUGGESTION GENERATION (5 Sources)
+    %% ============================================================================
+    subgraph SUGGESTION["💡 TAG SUGGESTION (5 Sources)"]
+        GEN_SUGGESTIONS[Generate Suggestions]
+        
+        SOURCE1["Source 1: Path<br/>_detect_component()<br/>Confidence: 1.0"]
+        SOURCE2["Source 2: Structure<br/>_detect_type()<br/>Confidence: 0.9"]
+        SOURCE3["Source 3: Imports<br/>_detect_features_from_imports()<br/>Confidence: 0.8"]
+        SOURCE4["Source 4: Names<br/>_detect_features_from_names()<br/>Confidence: 0.7"]
+        SOURCE5["Source 5: Content<br/>_detect_features_from_content()<br/>Confidence: 0.6"]
+        
+        GEN_SUGGESTIONS --> SOURCE1
+        GEN_SUGGESTIONS --> SOURCE2
+        GEN_SUGGESTIONS --> SOURCE3
+        GEN_SUGGESTIONS --> SOURCE4
+        GEN_SUGGESTIONS --> SOURCE5
+    end
+    
+    EXTRACTION --> GEN_SUGGESTIONS
+    SCHEMA -.->|config| SUGGESTION
+    
+    SOURCE1 --> DEDUPE[Deduplicate Tags<br/>Keep Highest Confidence]
+    SOURCE2 --> DEDUPE
+    SOURCE3 --> DEDUPE
+    SOURCE4 --> DEDUPE
+    SOURCE5 --> DEDUPE
+    
+    DEDUPE --> GEN_PRIMARY[Generate Primary Tag<br/>tool_/spec_/util_ prefix]
+    
+    GEN_PRIMARY --> CREATE_ANALYSIS[Create FileTagAnalysis<br/>Object]
+    
+    CREATE_ANALYSIS --> LOG_STATS[Log Statistics]
+    LOGGER -.->|code| LOG_STATS
+    
+    LOG_STATS --> ANALYZE_LOOP
+    
+    %% ============================================================================
+    %% OUTPUT MODES
+    %% ============================================================================
+    ANALYZE_LOOP -->|All files processed| OUTPUT_MODE{Output Mode?}
+    
+    OUTPUT_MODE -->|--json| JSON_OUTPUT[Generate JSON Array<br/>Structured Output]
+    OUTPUT_MODE -->|--apply| APPLY_TAGS[Apply Tags to Files<br/>Inject Tag Blocks]
+    OUTPUT_MODE -->|--report| REPORT[Generate Summary Report<br/>Statistics]
+    OUTPUT_MODE -->|--preview| PREVIEW[Format Analysis<br/>Human-Readable]
+    
+    %% ============================================================================
+    %% TAG APPLICATION (--apply mode)
+    %% ============================================================================
+    subgraph APPLICATION["✍️ TAG APPLICATION"]
+        APPLY_TAGS --> CHECK_EXISTING{Already<br/>Has Tags?}
+        CHECK_EXISTING -->|Yes| SKIP[Skip File]
+        CHECK_EXISTING -->|No| GEN_BLOCK[Generate Tag Block<br/>Filter by min_confidence]
+        
+        GEN_BLOCK --> FIND_INSERT[Find Insertion Point<br/>After shebang/encoding<br/>Before docstring]
+        FIND_INSERT --> INSERT[Insert Tag Block]
+        INSERT --> WRITE_FILE[Write Modified File]
+    end
+    
+    %% ============================================================================
+    %% OUTPUTS - Data Dependencies
+    %% ============================================================================
+    subgraph OUTPUTS["📤 OUTPUTS (Data Dependencies)"]
+        MODIFIED_FILES["Modified Python Files<br/>with injected tags"]
+        JSON_DATA["JSON Report<br/>Structured analysis"]
+        SUMMARY_REPORT["Summary Statistics<br/>Text report"]
+        PREVIEW_TEXT["Preview Output<br/>Console display"]
+    end
+    
+    WRITE_FILE --> MODIFIED_FILES
+    JSON_OUTPUT --> JSON_DATA
+    REPORT --> SUMMARY_REPORT
+    PREVIEW --> PREVIEW_TEXT
+    SKIP --> ANALYZE_LOOP
+    
+    JSON_DATA --> END([End])
+    SUMMARY_REPORT --> END
+    PREVIEW_TEXT --> END
+    MODIFIED_FILES --> END
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    classDef inputStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef configStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef codeStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef processStyle fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef outputStyle fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef decisionStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    
+    class PY_FILES,EXISTING_TAGS inputStyle
+    class SCHEMA configStyle
+    class LOGGER,AST_LIB,YAML_LIB codeStyle
+    class MODIFIED_FILES,JSON_DATA,SUMMARY_REPORT,PREVIEW_TEXT outputStyle
+    class ERROR_HANDLE,OUTPUT_MODE,CHECK_EXISTING decisionStyle

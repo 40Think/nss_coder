@@ -1,0 +1,187 @@
+graph TB
+    %% ============================================================================
+    %% TEST SYSTEM ARCHITECTURE - Two-Layer Logging with Paranoia Levels
+    %% ============================================================================
+    
+    %% Entry Point
+    CLI["🖥️ CLI Entry Point<br/>--paranoia 1-5<br/>--verbose"]
+    
+    %% Main Orchestrator
+    TESTER["📊 DocumentationSystemTester<br/>Paranoia Level: 1-5"]
+    
+    %% ============================================================================
+    %% PHASE 1: BASIC EXECUTION TESTS (Level 1+)
+    %% ============================================================================
+    
+    subgraph PHASE1["📋 PHASE 1: Basic Execution Tests (Level 1+)"]
+        TEST1["🔍 Dependency Analysis<br/>analyze_dependencies.py"]
+        TEST2["📄 Document Chunking<br/>chunk_documents.py"]
+        TEST3["✅ Documentation Validation<br/>validate_docs.py"]
+    end
+    
+    %% ============================================================================
+    %% PHASE 2: STRUCTURAL VALIDATION (Level 2+)
+    %% ============================================================================
+    
+    subgraph PHASE2["📁 PHASE 2: Structural Validation (Level 2+)"]
+        STRUCT1["📂 Directory Structure<br/>docs/, logs/, output/"]
+        STRUCT2["📖 README Files<br/>docs/README.MD, etc."]
+        STRUCT3["📝 Log Directories<br/>logs/paranoid, logs/intellectual"]
+    end
+    
+    %% ============================================================================
+    %% PHASE 3: AI-POWERED ANALYSIS (Level 3+)
+    %% ============================================================================
+    
+    subgraph PHASE3["🔬 PHASE 3: AI Analysis (Level 3+)"]
+        DEEP["🔍 Deep Supervisor<br/>Vertical Analysis<br/>Sample: 5-20 files"]
+        GLOBAL["🌍 Global Supervisor<br/>Horizontal Analysis<br/>Executive Summary"]
+    end
+    
+    %% ============================================================================
+    %% LAYER 1: PARANOID LOGGING (Forensic Traceability)
+    %% ============================================================================
+    
+    subgraph LAYER1["🔒 LAYER 1: Paranoid Logging"]
+        LOGGER["📋 DocsLogger<br/>Every step logged<br/>Forensic traceability"]
+        PLOG["📁 logs/paranoid/<br/>test_system_{timestamp}.log"]
+    end
+    
+    %% ============================================================================
+    %% LAYER 2: INTELLECTUAL LOGGING (AI Analysis)
+    %% ============================================================================
+    
+    subgraph LAYER2["🧠 LAYER 2: Intellectual Logging"]
+        ILOG["📊 Intellectual Log<br/>Session statistics<br/>Results summary<br/>Paranoia level details"]
+        IFILE["📁 logs/intellectual/<br/>test_system_{timestamp}.md"]
+    end
+    
+    %% ============================================================================
+    %% DEPENDENCIES - CODE (Layer 1)
+    %% ============================================================================
+    
+    subgraph DEPS_CODE["💻 Code Dependencies"]
+        DEP_LOGGER["docs.utils.docs_logger<br/>DocsLogger"]
+        DEP_DEEP["docs.utils.docs_deep_supervisor<br/>DocsDeepSupervisor (optional)"]
+        DEP_GLOBAL["docs.utils.docs_global_supervisor<br/>DocsGlobalSupervisor (optional)"]
+    end
+    
+    %% ============================================================================
+    %% DEPENDENCIES - DATA (Layer 3)
+    %% ============================================================================
+    
+    subgraph DEPS_DATA["📂 Data Dependencies"]
+        INPUT["📥 INPUT<br/>docs/automation/*.py<br/>(scripts to test)"]
+        OUTPUT["📤 OUTPUT<br/>logs/intellectual/{timestamp}.md<br/>Test results & statistics"]
+    end
+    
+    %% ============================================================================
+    %% DEPENDENCIES - EXTERNAL (Layer 4)
+    %% ============================================================================
+    
+    subgraph DEPS_EXT["🌐 External Dependencies"]
+        SUBPROCESS["subprocess<br/>Script execution"]
+        PYTHON["Python 3.x<br/>Runtime"]
+    end
+    
+    %% ============================================================================
+    %% RESULTS & EXIT
+    %% ============================================================================
+    
+    RESULTS["📊 Results Summary<br/>Passed/Failed/Total<br/>Success Rate"]
+    EXIT["🚪 Exit Code<br/>0 = Success<br/>1 = Failures"]
+    
+    %% ============================================================================
+    %% MAIN FLOW
+    %% ============================================================================
+    
+    CLI --> TESTER
+    TESTER --> PHASE1
+    
+    %% Paranoia Level Branching
+    PHASE1 -->|"Level ≥ 2"| PHASE2
+    PHASE2 -->|"Level ≥ 3"| PHASE3
+    
+    %% Phase 1 Tests
+    PHASE1 --> TEST1
+    PHASE1 --> TEST2
+    PHASE1 --> TEST3
+    
+    %% Phase 2 Tests
+    PHASE2 --> STRUCT1
+    PHASE2 --> STRUCT2
+    PHASE2 --> STRUCT3
+    
+    %% Phase 3 AI Analysis
+    PHASE3 -->|"Level ≥ 3"| DEEP
+    PHASE3 -->|"Level ≥ 4"| GLOBAL
+    
+    %% ============================================================================
+    %% LOGGING FLOWS
+    %% ============================================================================
+    
+    %% Layer 1: Paranoid Logging (all levels)
+    TESTER -.->|"Every action"| LOGGER
+    TEST1 -.-> LOGGER
+    TEST2 -.-> LOGGER
+    TEST3 -.-> LOGGER
+    STRUCT1 -.-> LOGGER
+    STRUCT2 -.-> LOGGER
+    STRUCT3 -.-> LOGGER
+    DEEP -.-> LOGGER
+    GLOBAL -.-> LOGGER
+    LOGGER --> PLOG
+    
+    %% Layer 2: Intellectual Logging (summary)
+    TESTER -->|"Generate summary"| ILOG
+    ILOG --> IFILE
+    
+    %% ============================================================================
+    %% DEPENDENCY FLOWS
+    %% ============================================================================
+    
+    %% Code Dependencies
+    TESTER -.->|"uses"| DEP_LOGGER
+    DEEP -.->|"uses"| DEP_DEEP
+    GLOBAL -.->|"uses"| DEP_GLOBAL
+    
+    %% Data Dependencies
+    INPUT -.->|"reads"| TEST1
+    INPUT -.->|"reads"| TEST2
+    INPUT -.->|"reads"| TEST3
+    ILOG -->|"writes"| OUTPUT
+    
+    %% External Dependencies
+    TEST1 -.->|"executes via"| SUBPROCESS
+    TEST2 -.->|"executes via"| SUBPROCESS
+    TEST3 -.->|"executes via"| SUBPROCESS
+    SUBPROCESS -.->|"requires"| PYTHON
+    
+    %% ============================================================================
+    %% FINAL FLOW
+    %% ============================================================================
+    
+    PHASE1 --> RESULTS
+    PHASE2 --> RESULTS
+    PHASE3 --> RESULTS
+    RESULTS --> EXIT
+    
+    %% ============================================================================
+    %% STYLING
+    %% ============================================================================
+    
+    classDef entryPoint fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef orchestrator fill:#2196F3,stroke:#1565C0,stroke-width:3px,color:#fff
+    classDef phase fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    classDef test fill:#9C27B0,stroke:#6A1B9A,stroke-width:2px,color:#fff
+    classDef logging fill:#F44336,stroke:#C62828,stroke-width:2px,color:#fff
+    classDef dependency fill:#607D8B,stroke:#37474F,stroke-width:2px,color:#fff
+    classDef output fill:#00BCD4,stroke:#00838F,stroke-width:2px,color:#fff
+    
+    class CLI entryPoint
+    class TESTER orchestrator
+    class PHASE1,PHASE2,PHASE3 phase
+    class TEST1,TEST2,TEST3,STRUCT1,STRUCT2,STRUCT3,DEEP,GLOBAL test
+    class LOGGER,PLOG,ILOG,IFILE logging
+    class DEP_LOGGER,DEP_DEEP,DEP_GLOBAL,INPUT,OUTPUT,SUBPROCESS,PYTHON dependency
+    class RESULTS,EXIT output

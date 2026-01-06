@@ -1,0 +1,117 @@
+graph TB
+    %% External Dependencies
+    AST[("Python AST Module<br/>ast.parse()<br/>ast.walk()")]
+    FileSystem[("File System<br/>Python source files<br/>*.py")]
+    Logger[("DocsLogger<br/>Logging System")]
+    
+    %% Input
+    Input["Input: Python File Path<br/>Source code to analyze"]
+    
+    %% Main Processing
+    subgraph ASTAutoTagger["AST Auto-Tagger System"]
+        
+        subgraph Parsing["1. Parsing Phase"]
+            ReadFile["Read source code<br/>with open(file, 'r')"]
+            ParseAST["Parse to AST<br/>ast.parse(content)"]
+            ValidateAST{"Valid<br/>syntax?"}
+        end
+        
+        subgraph Extraction["2. Entity Extraction"]
+            WalkAST["Walk AST tree<br/>ast.walk(tree)"]
+            
+            subgraph Detectors["Entity Detectors"]
+                DetectClass["ClassDef nodes<br/>→ classes"]
+                DetectFunc["FunctionDef nodes<br/>→ functions"]
+                DetectImport["Import/ImportFrom<br/>→ imports"]
+                DetectConst["Assign nodes<br/>→ constants"]
+            end
+            
+            CollectEntities["Collect entities<br/>CodeEntity dataclass"]
+        end
+        
+        subgraph TagGeneration["3. Tag Generation"]
+            AnalyzeContext["Analyze context<br/>file path, names"]
+            
+            subgraph TagTypes["Tag Types"]
+                ComponentTag["component:<br/>automation/utils/etc"]
+                TypeTag["type:<br/>script/class/function"]
+                FeatureTag["feature:<br/>from docstrings"]
+                DomainTag["domain:<br/>from imports"]
+            end
+            
+            FormatTags["Format as HTML<br/><!--TAG:name-->"]
+        end
+        
+        subgraph Insertion["4. Tag Insertion"]
+            FindHeader["Find file header<br/>after docstring"]
+            CheckExisting{"Tags<br/>exist?"}
+            InsertNew["Insert new tags"]
+            UpdateExisting["Update existing"]
+            WriteFile["Write modified file"]
+        end
+    end
+    
+    %% Output
+    Output["Output: Tagged File<br/>with <!--TAG:...--> markers"]
+    TagIndex[("Tag Index<br/>Searchable metadata")]
+    
+    %% Data Flow
+    FileSystem --> Input
+    Input --> ReadFile
+    ReadFile --> ParseAST
+    ParseAST --> ValidateAST
+    
+    ValidateAST -->|Yes| WalkAST
+    ValidateAST -->|No| ErrorLog["Log error<br/>Skip file"]
+    
+    WalkAST --> DetectClass
+    WalkAST --> DetectFunc
+    WalkAST --> DetectImport
+    WalkAST --> DetectConst
+    
+    DetectClass --> CollectEntities
+    DetectFunc --> CollectEntities
+    DetectImport --> CollectEntities
+    DetectConst --> CollectEntities
+    
+    CollectEntities --> AnalyzeContext
+    AnalyzeContext --> ComponentTag
+    AnalyzeContext --> TypeTag
+    AnalyzeContext --> FeatureTag
+    AnalyzeContext --> DomainTag
+    
+    ComponentTag --> FormatTags
+    TypeTag --> FormatTags
+    FeatureTag --> FormatTags
+    DomainTag --> FormatTags
+    
+    FormatTags --> FindHeader
+    FindHeader --> CheckExisting
+    CheckExisting -->|No| InsertNew
+    CheckExisting -->|Yes| UpdateExisting
+    InsertNew --> WriteFile
+    UpdateExisting --> WriteFile
+    
+    WriteFile --> Output
+    Output --> TagIndex
+    
+    AST -.-> ParseAST
+    AST -.-> WalkAST
+    Logger -.-> ASTAutoTagger
+    
+    %% Styling
+    classDef external fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef parse fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef extract fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef generate fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef insert fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef decision fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef storage fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    
+    class AST,FileSystem,Logger external
+    class ReadFile,ParseAST parse
+    class WalkAST,DetectClass,DetectFunc,DetectImport,DetectConst,CollectEntities extract
+    class AnalyzeContext,ComponentTag,TypeTag,FeatureTag,DomainTag,FormatTags generate
+    class FindHeader,InsertNew,UpdateExisting,WriteFile insert
+    class ValidateAST,CheckExisting decision
+    class Output,TagIndex storage
