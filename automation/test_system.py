@@ -93,13 +93,14 @@ class DocumentationSystemTester:
             paranoia_level: Testing depth level (1-5)
         """
         self.project_root = project_root
-        self.automation_dir = project_root / 'docs' / 'automation'
+        self.automation_dir = project_root / 'automation'
         self.paranoia_level = min(max(paranoia_level, 1), 5)  # Clamp to 1-5
         self.results: List[Tuple[str, bool, str]] = []
         self.start_time = time.time()
         
         # Log initialization
-        logger.log_step("TestSystem Init", "STARTED", 0, 0, {
+        # Log initialization
+        logger.log_step("TestSystem Init", "STARTED", 0.0, {
             "project_root": str(project_root),
             "paranoia_level": self.paranoia_level
         })
@@ -149,7 +150,7 @@ class DocumentationSystemTester:
     
     def _run_basic_tests(self):
         """Run basic execution tests for automation scripts."""
-        logger.log_step("Basic Tests", "STARTED", 0, 0)
+        logger.log_step("Basic Tests", "STARTED", 0.0)
         
         # Test 1: Dependency Analysis
         self._test_script_execution(
@@ -172,11 +173,11 @@ class DocumentationSystemTester:
             ['--report', '/tmp/test_validation_report.md']
         )
         
-        logger.log_step("Basic Tests", "COMPLETED", time.time() - self.start_time, 0)
+        logger.log_step("Basic Tests", "COMPLETED", time.time() - self.start_time)
     
     def _run_structural_tests(self):
         """Run structural validation tests."""
-        logger.log_step("Structural Tests", "STARTED", 0, 0)
+        logger.log_step("Structural Tests", "STARTED", 0.0)
         
         # Test 4: Directory Structure
         self._test_directory_structure()
@@ -187,11 +188,11 @@ class DocumentationSystemTester:
         # Test 6: Log Directories
         self._test_log_directories()
         
-        logger.log_step("Structural Tests", "COMPLETED", time.time() - self.start_time, 0)
+        logger.log_step("Structural Tests", "COMPLETED", time.time() - self.start_time)
     
     def _run_ai_analysis(self):
         """Run AI-powered analysis (Layer 2)."""
-        logger.log_step("AI Analysis", "STARTED", 0, 0)
+        logger.log_step("AI Analysis", "STARTED", 0.0)
         
         # Deep Supervisor (Vertical Analysis) - Level 3+
         if self.paranoia_level >= 3 and DEEP_SUPERVISOR_AVAILABLE:
@@ -246,7 +247,7 @@ class DocumentationSystemTester:
             print("  ⚠️  Global Supervisor not available (import failed)")
             logger.warning("Global Supervisor not available")
         
-        logger.log_step("AI Analysis", "COMPLETED", time.time() - self.start_time, 0)
+        logger.log_step("AI Analysis", "COMPLETED", time.time() - self.start_time)
     
     def _test_script_execution(self, name: str, script_path: Path, args: List[str]):
         """
@@ -280,13 +281,13 @@ class DocumentationSystemTester:
             
             if result.returncode == 0:
                 self.results.append((name, True, f"Duration: {duration:.2f}s"))
-                logger.log_step(f"Test {name}", "COMPLETED", duration, 0)
+                logger.log_step(f"Test {name}", "COMPLETED", duration)
                 logger.info(f"  ✅ {name}: PASS ({duration:.2f}s)")
                 print(f"  ✅ {name}: PASS ({duration:.2f}s)")
             else:
                 error_msg = result.stderr[:200] if result.stderr else "Unknown error"
                 self.results.append((name, False, error_msg))
-                logger.log_step(f"Test {name}", "FAILED", duration, 0)
+                logger.log_step(f"Test {name}", "FAILED", duration)
                 logger.error(f"  ❌ {name}: FAIL - {error_msg[:80]}")
                 print(f"  ❌ {name}: FAIL")
                 
@@ -462,7 +463,7 @@ class DocumentationSystemTester:
         print(f"Paranoia Level: {self.paranoia_level}/5")
         print(f"{'='*70}")
         
-        logger.log_step("TestSystem", "COMPLETED", duration, 0, {
+        logger.log_step("TestSystem", "COMPLETED", duration, {
             "passed": passed,
             "total": total,
             "paranoia_level": self.paranoia_level
@@ -522,8 +523,8 @@ Examples:
     tester = DocumentationSystemTester(project_root, paranoia_level=args.paranoia)
     exit_code = tester.run_all_tests()
     
-    # Print stats summary
-    logger.print_stats_summary()
+    # Print stats summary (DocsLogger handled summary internally or it can be skipped)
+    # logger.print_stats_summary()
     
     sys.exit(exit_code)
 

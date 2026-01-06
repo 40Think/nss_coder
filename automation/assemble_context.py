@@ -117,20 +117,20 @@ class ContextAssembler:
     
     # Synonym mapping for keyword extraction (RU/EN)
     KEYWORD_SYNONYMS = {
-        'analytics': ['analytics', 'аналитика', 'analysis', 'анализ', 'stats'],
-        'memory': ['memory', 'память', 'embedding', 'embeddings', 'vector'],
-        'search': ['search', 'поиск', 'retrieval', 'find', 'query'],
-        'pipeline': ['pipeline', 'конвейер', 'processing', 'обработка', 'flow'],
-        'splitter': ['splitter', 'split', 'разделение', 'chunk'],
-        'grouper': ['grouper', 'group', 'группировка', 'cluster'],
-        'linker': ['linker', 'link', 'связь', 'relation'],
-        'tagger': ['tagger', 'tag', 'теги', 'label'],
-        'ontology': ['ontology', 'онтология', 'taxonomy', 'classification'],
-        'transcriber': ['transcriber', 'transcription', 'транскрипция', 'speech'],
-        'vision': ['vision', 'image', 'изображение', 'visual', 'ocr'],
-        'context': ['context', 'контекст', 'prompt', 'assembly'],
-        'dependency': ['dependency', 'зависимость', 'import', 'require'],
-        'test': ['test', 'тест', 'testing', 'validation'],
+        'analytics': ['analytics', 'analysis', 'stats'],
+        'memory': ['memory', 'embedding', 'embeddings', 'vector'],
+        'search': ['search', 'retrieval', 'find', 'query'],
+        'pipeline': ['pipeline', 'processing', 'flow'],
+        'splitter': ['splitter', 'split', 'chunk'],
+        'grouper': ['grouper', 'group', 'cluster'],
+        'linker': ['linker', 'link', 'relation'],
+        'tagger': ['tagger', 'tag', 'label'],
+        'ontology': ['ontology', 'taxonomy', 'classification'],
+        'transcriber': ['transcriber', 'transcription', 'speech'],
+        'vision': ['vision', 'image', 'visual', 'ocr'],
+        'context': ['context', 'prompt', 'assembly'],
+        'dependency': ['dependency', 'import', 'require'],
+        'test': ['test', 'testing', 'validation'],
     }
     
     def __init__(self, project_root: Path):

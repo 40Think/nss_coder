@@ -3,10 +3,9 @@ description: "Hierarchical multi-layer document chunking for RAG systems"
 date: 2025-12-11
 source_file: chunk_documents.py
 tags: automation, chunking, RAG, hierarchical, semantic
-version: 2.0
 ---
 
-# chunk_documents.py - Псевдокод (v2.0 - Hierarchical)
+# chunk_documents.py - Pseudocode (v2.0 - Hierarchical)
 
 <!--TAG:pseudo_chunk_documents-->
 
@@ -20,7 +19,7 @@ Implements 3-layer memory architecture adapted from cheap_memory.py:
 Preserves code blocks, tables, and lists intact.
 Supports adaptive chunk sizing based on content complexity.
 
-## АРХИТЕКТУРА (3 слоя)
+## ARCHITECTURE (3 layers)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -36,46 +35,46 @@ Supports adaptive chunk sizing based on content complexity.
      L0 CLAUSES       L0 CLAUSES
 ```
 
-## СТРУКТУРЫ ДАННЫХ
+## DATA STRUCTURES
 
 ### ChunkLayer (Enum)
 ```pseudo
 ENUM ChunkLayer:
-    CLAUSES = "clauses"      # L0: Предложения/абзацы
-    SECTIONS = "sections"    # L1: Секции по заголовкам
-    DOCUMENTS = "documents"  # L2: Полный документ
+    CLAUSES = "clauses"      # L0: Sentences/paragraphs
+    SECTIONS = "sections"    # L1: Header-based sections
+    DOCUMENTS = "documents"  # L2: Full document
 ```
 
 ### HierarchicalChunk (dataclass)
 ```pseudo
 DATACLASS HierarchicalChunk:
-    content: STRING            # Содержимое чанка
-    layer: ChunkLayer          # Уровень (CLAUSES/SECTIONS/DOCUMENTS)
-    chunk_id: STRING           # Уникальный ID
-    metadata: DICT             # Метаданные (file, section, etc)
-    parent_id: STRING | None   # ID родительского чанка
-    embedding_ready: BOOL      # Готов ли для эмбеддинга
+    content: STRING            # Chunk content
+    layer: ChunkLayer          # Layer (CLAUSES/SECTIONS/DOCUMENTS)
+    chunk_id: STRING           # Unique ID
+    metadata: DICT             # Metadata (file, section, etc)
+    parent_id: STRING | None   # Parent chunk ID
+    embedding_ready: BOOL      # Ready for embedding?
 ```
 
 ### PreservedBlock (dataclass)
 ```pseudo
 DATACLASS PreservedBlock:
     block_type: STRING    # 'code_block', 'table', 'list'
-    start: INT            # Позиция начала в тексте
-    end: INT              # Позиция конца
-    content: STRING       # Полное содержимое блока
-    language: STRING      # Для код-блоков: язык
+    start: INT            # Start position in text
+    end: INT              # End position
+    content: STRING       # Full block content
+    language: STRING      # For code blocks: language
 ```
 
-## КЛАСС: HierarchicalDocumentChunker
+## CLASS: HierarchicalDocumentChunker
 
-### Инициализация
+### Initialization
 ```pseudo
 CLASS HierarchicalDocumentChunker:
     CONSTANTS:
-        DEFAULT_CLAUSE_SIZE = 200     # Макс. символов для clause
-        DEFAULT_SECTION_SIZE = 2000   # Макс. символов перед разбиением секции
-        DEFAULT_OVERLAP = 50          # Перекрытие между clauses
+        DEFAULT_CLAUSE_SIZE = 200     # Max chars for clause
+        DEFAULT_SECTION_SIZE = 2000   # Max chars before splitting section
+        DEFAULT_OVERLAP = 50          # Overlap between clauses
     
     REGEX PATTERNS:
         HEADER_PATTERN = /^(#{1,6})\s+(.+)$/m
@@ -90,23 +89,23 @@ CLASS HierarchicalDocumentChunker:
         self.overlap = overlap OR DEFAULT_OVERLAP
 ```
 
-### chunk_document - Главный метод (3 слоя)
+### chunk_document - Main method (3 layers)
 ```pseudo
 FUNCTION chunk_document(doc_file) -> Dict[ChunkLayer, List[HierarchicalChunk]]:
-    # === Подготовка ===
+    # === Preparation ===
     content = READ doc_file AS UTF-8
     frontmatter = CALL _extract_frontmatter(content)
     content_body = CALL _remove_frontmatter(content)
     rel_path = CALCULATE relative path from project_root
     
-    # Инициализация контейнеров для каждого слоя
+    # Initialize containers for each layer
     chunks = {
         CLAUSES: [],
         SECTIONS: [],
         DOCUMENTS: []
     }
     
-    # === Layer 2: DOCUMENTS (один чанк = весь документ) ===
+    # === Layer 2: DOCUMENTS (one chunk = full document) ===
     doc_chunk = CREATE HierarchicalChunk(
         content=content,
         layer=DOCUMENTS,
@@ -115,7 +114,7 @@ FUNCTION chunk_document(doc_file) -> Dict[ChunkLayer, List[HierarchicalChunk]]:
     )
     APPEND doc_chunk TO chunks[DOCUMENTS]
     
-    # === Layer 1: SECTIONS (разбиение по заголовкам) ===
+    # === Layer 1: SECTIONS (header-based split) ===
     sections = CALL _split_by_headers(content_body)
     
     FOR EACH section AT INDEX i:
@@ -130,7 +129,7 @@ FUNCTION chunk_document(doc_file) -> Dict[ChunkLayer, List[HierarchicalChunk]]:
         )
         APPEND section_chunk TO chunks[SECTIONS]
         
-        # === Layer 0: CLAUSES (мелкозернистые чанки) ===
+        # === Layer 0: CLAUSES (fine-grained chunks) ===
         clauses = CALL _chunk_into_clauses(section.content, section.header)
         
         FOR EACH clause AT INDEX j:
@@ -141,21 +140,21 @@ FUNCTION chunk_document(doc_file) -> Dict[ChunkLayer, List[HierarchicalChunk]]:
                 layer=CLAUSES,
                 chunk_id=clause_id,
                 metadata={header, clause_index, section_index},
-                parent_id=section_id  # Иерархия: clause -> section -> doc
+                parent_id=section_id  # Hierarchy: clause -> section -> doc
             )
             APPEND clause_chunk TO chunks[CLAUSES]
     
     RETURN chunks
 ```
 
-## СОХРАНЕНИЕ СТРУКТУРЫ (Code blocks, Tables)
+## STRUCTURE PRESERVATION (Code blocks, Tables)
 
-### _detect_preserved_blocks - Обнаружение блоков
+### _detect_preserved_blocks - Block discovery
 ```pseudo
 FUNCTION _detect_preserved_blocks(content) -> List[PreservedBlock]:
     blocks = []
     
-    # Найти все code fences (```...```)
+    # Find all code fences (```...```)
     FOR EACH match OF CODE_FENCE_PATTERN IN content:
         language = EXTRACT language FROM first line
         APPEND PreservedBlock(
@@ -166,7 +165,7 @@ FUNCTION _detect_preserved_blocks(content) -> List[PreservedBlock]:
             language=language
         ) TO blocks
     
-    # Найти все markdown таблицы
+    # Find all markdown tables
     FOR EACH match OF TABLE_PATTERN IN content:
         APPEND PreservedBlock(
             type='table',
@@ -179,7 +178,7 @@ FUNCTION _detect_preserved_blocks(content) -> List[PreservedBlock]:
     RETURN blocks
 ```
 
-### _chunk_with_preservation - Разбиение с сохранением
+### _chunk_with_preservation - Splitting with preservation
 ```pseudo
 FUNCTION _chunk_with_preservation(text, preserved_blocks) -> List[STRING]:
     IF preserved_blocks IS EMPTY:
@@ -189,17 +188,17 @@ FUNCTION _chunk_with_preservation(text, preserved_blocks) -> List[STRING]:
     current_pos = 0
     
     FOR EACH block IN preserved_blocks:
-        # Разбить текст ДО этого блока обычным способом
+        # Split text BEFORE this block using regular method
         before_text = text[current_pos : block.start]
         IF before_text HAS CONTENT:
             EXTEND chunks WITH CALL _split_into_sentences(before_text)
         
-        # Добавить preserved block КАК ЕСТЬ (не разбивать!)
+        # Add preserved block AS IS (do not split!)
         APPEND block.content TO chunks
         
         current_pos = block.end
     
-    # Разбить остаток текста
+    # Split the remaining text
     remaining = text[current_pos:]
     IF remaining HAS CONTENT:
         EXTEND chunks WITH CALL _split_into_sentences(remaining)
@@ -207,38 +206,38 @@ FUNCTION _chunk_with_preservation(text, preserved_blocks) -> List[STRING]:
     RETURN chunks
 ```
 
-## АДАПТИВНЫЙ РАЗМЕР ЧАНКОВ
+## ADAPTIVE CHUNK SIZING
 
 ### _calculate_adaptive_size
 ```pseudo
 FUNCTION _calculate_adaptive_size(text) -> INT:
-    # Код/таблицы = большие чанки (800)
+    # Code/tables = large chunks (800)
     IF '```' IN text OR ('|' IN text AND '---' IN text):
         RETURN 800
     
-    # Проверить плотность текста
+    # Check text density
     density = words_count / char_count
     
-    IF density > 0.2:     # Плотный текст
+    IF density > 0.2:     # Dense text
         RETURN 300
-    ELSE IF density > 0.15:  # Нормальный
+    ELSE IF density > 0.15:  # Normal
         RETURN 400
-    ELSE:                    # Разреженный (код-подобный)
+    ELSE:                    # Sparse (code-like)
         RETURN 500
 ```
 
-## РАЗБИЕНИЕ НА CLAUSES
+## SPLITTING INTO CLAUSES
 
 ### _chunk_into_clauses
 ```pseudo
 FUNCTION _chunk_into_clauses(text, header) -> List[STRING]:
-    # 1. Обнаружить preserved blocks
+    # 1. Detect preserved blocks
     preserved = CALL _detect_preserved_blocks(text)
     
-    # 2. Разбить с сохранением блоков
+    # 2. Split preserving blocks
     raw_chunks = CALL _chunk_with_preservation(text, preserved)
     
-    # 3. Объединить мелкие, разбить крупные
+    # 3. Merge small ones, split large ones
     final_chunks = []
     current = ""
     
@@ -272,10 +271,10 @@ FUNCTION _chunk_into_clauses(text, header) -> List[STRING]:
 
 ## BACKWARD COMPATIBILITY
 
-### SemanticChunker (обёртка)
+### SemanticChunker (wrapper)
 ```pseudo
 CLASS SemanticChunker:
-    """Backward compatible wrapper для старого API."""
+    """Backward compatible wrapper for old API."""
     
     FUNCTION __init__(max_chunk_size=1000, overlap=200):
         self._hierarchical = HierarchicalDocumentChunker(
@@ -286,7 +285,7 @@ CLASS SemanticChunker:
     
     FUNCTION chunk_markdown(file_path) -> List[HierarchicalChunk]:
         chunks = self._hierarchical.chunk_document(file_path)
-        # Возвращаем SECTIONS для совместимости
+        # Return SECTIONS for compatibility
         RETURN chunks[SECTIONS]
 ```
 
@@ -311,17 +310,17 @@ FUNCTION main():
         chunk_directory(input_dir, output_dir, hierarchical=NOT legacy)
 ```
 
-## ВЫХОДНЫЕ ФАЙЛЫ
+## OUTPUT FILES
 
 ```
 docs/memory/chunks/
-├── {file}_chunks.json           # Все 3 слоя для файла
-├── chunks_index_clauses.json    # Индекс L0
-├── chunks_index_sections.json   # Индекс L1
-└── chunks_index_documents.json  # Индекс L2
+├── {file}_chunks.json           # All 3 layers for the file
+├── chunks_index_clauses.json    # L0 index
+├── chunks_index_sections.json   # L1 index
+└── chunks_index_documents.json  # L2 index
 ```
 
-## ЗАВИСИМОСТИ
+## DEPENDENCIES
 
 - **pathlib**: Path operations
 - **dataclasses**: Data structures
@@ -331,7 +330,7 @@ docs/memory/chunks/
 - **re**: Regex for structure detection
 - **docs.utils.docs_logger**: Isolated DocsLogger for paranoid logging
 
-## СВЯЗЬ С ДРУГИМИ МОДУЛЯМИ
+## RELATION TO OTHER MODULES
 
 - **cheap_memory.py**: Layer architecture adapted from there
 - **embedding_client.py**: Adaptive sizing pattern adapted from there

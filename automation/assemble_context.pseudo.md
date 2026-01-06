@@ -1,40 +1,40 @@
 ---
-description: "Собирает контекст из проектных файлов для AI-агентов (Enhanced v2)"
+description: "Assembles context from project files for AI agents (Enhanced v2)"
 date: 2025-12-12
 source_file: assemble_context.py
 tags: automation, context, AI, prompt, semantic_search, dual_memory
 ---
 
-# assemble_context.py - Псевдокод (Enhanced v2)
+# assemble_context.py - Pseudocode (Enhanced v2)
 
 <!--TAG:pseudo_assemble_context-->
 
 ## PURPOSE
-Собирает релевантный контекст из проектных файлов для AI-агентов.
-Поддерживает семантический поиск через dual_memory с fallback на keyword search.
-Добавляет metadata и provenance для каждого файла.
+Assembles relevant context from project files for AI agents.
+Supports semantic search via dual_memory with fallback to keyword search.
+Adds metadata and provenance for each file.
 
-## КЛЮЧЕВЫЕ УЛУЧШЕНИЯ v2
-1. **Semantic search** через dual_memory.py
-2. **Metadata/Provenance** - объяснение почему включен каждый файл
-3. **Adaptive tag extraction** - обработка 0-6+ тегов
-4. **File ranking** - приоритизация по релевантности
-5. **RU/EN synonyms** - поддержка русских ключевых слов
+## KEY ENHANCEMENTS v2
+1. **Semantic search** via dual_memory.py
+2. **Metadata/Provenance** - explanation of why each file is included
+3. **Adaptive tag extraction** - handling 0-6+ tags
+4. **File ranking** - prioritizing by relevance
+5. **RU/EN synonyms** - support for Russian keywords
 
-## СТРУКТУРЫ ДАННЫХ
+## DATA STRUCTURES
 
 ### FileMetadata (dataclass) [NEW]
 ```pseudo
 DATACLASS FileMetadata:
-    path: STRING                  # Путь к файлу
-    reason: STRING                # Почему включен
+    path: STRING                  # Path to file
+    reason: STRING                # Why included
     relevance_score: FLOAT        # 0.0-1.0
     matched_keywords: LIST[STRING]
     content_type: STRING          # 'spec', 'wiki', 'code', 'readme', 'dependency'
     file_size_kb: FLOAT
     last_modified: STRING         # ISO timestamp
-    tags: LIST[STRING]            # Семантические теги
-    line_range: TUPLE[INT, INT]   # Опционально: строки
+    tags: LIST[STRING]            # Semantic tags
+    line_range: TUPLE[INT, INT]   # Optional: lines
 ```
 
 ### ContextPackage (dataclass) [ENHANCED]
@@ -49,24 +49,24 @@ DATACLASS ContextPackage:
     related_tags: LIST[STRING]
     
     # NEW FIELDS
-    file_metadata: DICT[STRING, FileMetadata]  # Metadata для каждого файла
-    assembly_stats: DICT[STRING, ANY]          # Статистика сборки
-    search_strategy: STRING                     # 'semantic' или 'keyword'
-    project_tree: STRING                        # Структура проекта
+    file_metadata: DICT[STRING, FileMetadata]  # Metadata for each file
+    assembly_stats: DICT[STRING, ANY]          # Assembly statistics
+    search_strategy: STRING                     # 'semantic' or 'keyword'
+    project_tree: STRING                        # Project structure
 ```
 
-## КЛАСС: ContextAssembler
+## CLASS: ContextAssembler
 
-### Инициализация [ENHANCED]
+### Initialization [ENHANCED]
 ```pseudo
 CLASS ContextAssembler:
-    # Synonym mapping для RU/EN
+    # Synonym mapping for search terms
     KEYWORD_SYNONYMS = {
-        'analytics': ['analytics', 'аналитика', 'analysis', 'анализ'],
-        'memory': ['memory', 'память', 'embedding', 'embeddings'],
-        'search': ['search', 'поиск', 'retrieval', 'find'],
-        'pipeline': ['pipeline', 'конвейер', 'processing', 'обработка'],
-        # ... и другие
+        'analytics': ['analytics', 'analysis', 'stats', 'data'],
+        'memory': ['memory', 'storage', 'embedding', 'embeddings'],
+        'search': ['search', 'retrieval', 'find', 'query'],
+        'pipeline': ['pipeline', 'processing', 'flow', 'workflow'],
+        # ... and others
     }
     
     FUNCTION __init__(project_root):
@@ -74,7 +74,7 @@ CLASS ContextAssembler:
         self.docs_dir = project_root / 'docs'
         self.current_keywords = []
         
-        # Попытка инициализации dual_memory
+        # Attempt to initialize dual_memory
         TRY:
             # Import from isolated docs namespace (not main project)
             FROM docs.utils.docs_dual_memory IMPORT DocsDualMemory
@@ -94,11 +94,11 @@ CLASS ContextAssembler:
 FUNCTION assemble_for_task(task_description):
     start_time = GET current time
     
-    # Шаг 1: Создать пакет с метаданными
+    # Step 1: Create package with metadata
     package = NEW ContextPackage()
     package.search_strategy = "semantic" IF use_semantic ELSE "keyword"
     
-    # Шаг 2: Всегда добавлять README с metadata
+    # Step 2: Always add README with metadata
     CALL _add_file_with_metadata(
         package,
         "docs/README.MD",
@@ -107,25 +107,25 @@ FUNCTION assemble_for_task(task_description):
         content_type='readme'
     )
     
-    # Шаг 3: Извлечь ключевые слова с синонимами
+    # Step 3: Extract keywords with synonyms
     self.current_keywords = CALL _extract_keywords_advanced(task_description)
     
-    # Шаг 4: Выбор стратегии поиска
+    # Step 4: Choose search strategy
     IF use_semantic:
         CALL _assemble_semantic(package, task_description)
     ELSE:
         CALL _assemble_keyword(package)
     
-    # Шаг 5: Добавить dependency maps
+    # Step 5: Add dependency maps
     FOR EACH code_file IN package.code_files:
         dep_map = CALL _find_dependency_map(code_file)
         IF dep_map EXISTS:
             CALL _add_file_with_metadata(package, dep_map, ...)
     
-    # Шаг 6: Добавить структуру проекта
+    # Step 6: Add project structure
     package.project_tree = CALL _generate_project_tree()
     
-    # Шаг 7: Собрать статистику
+    # Step 7: Collect statistics
     elapsed = GET current time - start_time
     package.assembly_stats = {
         'time_seconds': elapsed,
@@ -279,7 +279,7 @@ FUNCTION _extract_keywords_advanced(text):
     keywords = SET()
     text_lower = LOWERCASE(text)
     
-    # Проверить все синонимы
+    # Check all synonyms
     FOR EACH (canonical, variants) IN KEYWORD_SYNONYMS:
         FOR EACH variant IN variants:
             IF variant IN text_lower:
@@ -296,7 +296,7 @@ FUNCTION _assemble_semantic(package, query):
         results = dual_memory.unified_search(query, top_k=15)
         
         FOR EACH result IN results:
-            # Определить тип контента
+            # Determine content type
             content_type = DETECT from result.source_file
             
             CALL _add_file_with_metadata(
@@ -315,20 +315,20 @@ FUNCTION _assemble_semantic(package, query):
 ### _add_file_with_metadata [NEW]
 ```pseudo
 FUNCTION _add_file_with_metadata(package, file_path, reason, score, content_type, keywords=None, line_range=None):
-    # Skip если уже добавлен с более высоким score
+    # Skip if already added with higher score
     IF file_path IN package.file_metadata:
         IF package.file_metadata[file_path].relevance_score >= score:
             RETURN
     
-    # Получить статистику файла
+    # Get file statistics
     stat = GET file statistics(file_path)
     size_kb = stat.size / 1024
     modified = FORMAT stat.mtime AS ISO
     
-    # Извлечь теги
+    # Extract tags
     tags = CALL _extract_tags_from_file(file_path)
     
-    # Создать metadata
+    # Create metadata
     metadata = NEW FileMetadata(
         path=file_path,
         reason=reason,
@@ -343,7 +343,7 @@ FUNCTION _add_file_with_metadata(package, file_path, reason, score, content_type
     
     package.file_metadata[file_path] = metadata
     
-    # Добавить в соответствующий список
+    # Add to appropriate list based on content_type
     APPEND file_path TO appropriate list based on content_type
 ```
 
@@ -352,11 +352,11 @@ FUNCTION _add_file_with_metadata(package, file_path, reason, score, content_type
 FUNCTION _extract_tagged_content_adaptive(file_path):
     content = READ file_path
     
-    # Найти все теги
+    # Find all tags
     tags = REGEX findall '<!--TAG:(.+?)-->(.+?)<!--/TAG:\1-->' IN content
     
     IF LENGTH(tags) == 0:
-        # Нет тегов - вернуть весь файл
+        # No tags - return full file
         RETURN {
             'strategy': 'full_file',
             'content': content,
@@ -367,7 +367,7 @@ FUNCTION _extract_tagged_content_adaptive(file_path):
         tag_content = tags[0].content
         
         IF LENGTH(tag_content) < 500:
-            # Только docstring - включить весь файл
+            # Only docstring - include full file
             RETURN {
                 'strategy': 'docstring_only',
                 'docstring': tag_content,
@@ -381,7 +381,7 @@ FUNCTION _extract_tagged_content_adaptive(file_path):
             }
     
     ELSE IF LENGTH(tags) > 5:
-        # Слишком много тегов - приоритизировать
+        # Too many tags - prioritize
         scored_tags = []
         FOR EACH tag IN tags:
             score = COUNT keyword matches in tag.content
@@ -396,7 +396,7 @@ FUNCTION _extract_tagged_content_adaptive(file_path):
         }
     
     ELSE:
-        # Нормальный случай - 2-5 тегов
+        # Normal case - 2-5 tags
         RETURN {
             'strategy': 'multiple_tags',
             'tags': ALL tags

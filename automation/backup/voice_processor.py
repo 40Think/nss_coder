@@ -40,13 +40,11 @@ import re  # Regular expressions for text processing
 
 # Add docs to Python path for isolated utilities
 DOCS_DIR = Path(__file__).resolve().parent.parent  # Navigate to docs/ directory
-# Add project root to Python path for portable imports
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))  # Add project root for imports
+sys.path.insert(0, str(DOCS_DIR.parent))  # Add project root for imports
 
 # Import docs utilities
-from utils.docs_logger import DocsLogger  # Paranoid logging
-from utils.docs_llm_backend import DocsLLMBackend  # LLM calls
+from docs.utils.docs_logger import DocsLogger  # Paranoid logging
+from docs.utils.docs_llm_backend import DocsLLMBackend  # LLM calls
 
 # Initialize logger
 logger = DocsLogger("voice_processor")
@@ -106,12 +104,12 @@ class ProcessingResult:
 # ============================================================================
 
 # Prompt for correcting ASR errors and expanding text
-ENHANCE_PROMPT_EN = """Correct speech recognition errors in the following text.
-Expand the text by approximately 20%, adding specifics and details.
-Preserve the original meaning and style. Do NOT add anything that was not in the original.
-Respond ONLY with the corrected text, without explanation.
+ENHANCE_PROMPT_RU = """Исправь ошибки распознавания речи в следующем тексте.
+Расширь текст примерно на 20%, добавляя конкретизацию и детали.
+Сохрани оригинальный смысл и стиль. НЕ добавляй ничего, чего не было в оригинале.
+Отвечай ТОЛЬКО исправленным текстом, без пояснений.
 
-Text:
+Текст:
 {text}"""
 
 # Prompt for translation to English
@@ -123,101 +121,101 @@ Text:
 {text}"""
 
 # Prompt for formatting as AI prompt
-FORMAT_PROMPT_TEMPLATE = """Transform the following text into a structured prompt for an AI assistant.
-Take into account the project context, paying attention to information sources.
+FORMAT_PROMPT_TEMPLATE = """Преобразуй следующий текст в структурированный промпт для AI-ассистента.
+Учти контекст из проекта, обращая внимание на источники информации.
 
-## Project Context (with sources)
+## Контекст из проекта (с источниками)
 {context}
 
-## Explanation of Sources:
-- 🧑 Human-in-the-Loop (human selected) = 100% reliability, highest priority
-- ⭐ Smart Select (LLM suggested) = 95% reliability
-- 🧠 Total Recall = 95% reliability (LLM checked all files)
-- 🔍 Embeddings = 70-80% reliability (vector search)
-- 📁 External (external file) = user added manually
+## Пояснение по источникам:
+- 🧑 Human-in-the-Loop (человек выбрал) = 100% надёжность, наивысший приоритет
+- ⭐ Smart Select (LLM предложил) = 95% надёжность
+- 🧠 Total Recall = 95% надёжность (LLM проверил все файлы)
+- 🔍 Embeddings = 70-80% надёжность (векторный поиск)
+- 📁 External (внешний файл) = пользователь добавил вручную
 
-## Source Text
+## Исходный текст
 {text}
 
-Output format:
-## Goal
-[task goal from text]
+Формат вывода:
+## Цель
+[цель задачи из текста]
 
-## Context
-[relevant files and documentation from context above, specify source]
+## Контекст
+[релевантные файлы и документация из контекста выше, указать источник]
 
-## Requirements
-[specific requirements from text]
+## Требования
+[конкретные требования из текста]
 
-## Constraints
-[constraints if any]"""
+## Ограничения
+[ограничения если есть]"""
 
 # Prompt for formatting as ticket
-FORMAT_TICKET_TEMPLATE = """Transform the following text into a ticket/task format.
-Take into account the project context considering information sources.
+FORMAT_TICKET_TEMPLATE = """Преобразуй следующий текст в формат тикета/задачи.
+Учти контекст из проекта с указанием источников информации.
 
-## Project Context (with sources)
+## Контекст из проекта (с источниками)
 {context}
 
-## Explanation of Sources:
-- 🧑 Human-in-the-Loop = highest priority (manually selected by human)
-- ⭐ Smart Select / 🧠 Total Recall = 95% reliability
-- 🔍 Embeddings = 70-80% reliability
+## Пояснение по источникам:
+- 🧑 Human-in-the-Loop = высший приоритет (человек выбрал вручную)
+- ⭐ Smart Select / 🧠 Total Recall = 95% надёжность
+- 🔍 Embeddings = 70-80% надёжность
 
-## Source Text
+## Исходный текст
 {text}
 
-Output format:
-## [TICKET-{id}] [brief title]
+Формат вывода:
+## [TICKET-{id}] [краткий заголовок]
 
-**Priority**: Medium/High/Low
-**Type**: Task/Bug/Feature/Documentation
+**Приоритет**: Medium/High/Low
+**Тип**: Task/Bug/Feature/Documentation
 
-### Description
-[detailed description]
+### Описание
+[детальное описание]
 
-### Related Files (with sources)
-[files from context with source specified]
+### Связанные файлы (с источниками)
+[файлы из контекста с указанием источника]
 
 ### Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2"""
+- [ ] Критерий 1
+- [ ] Критерий 2"""
 
 # Prompt for formatting as specification
-FORMAT_SPEC_TEMPLATE = """Transform the following text into a specification format.
-Use project context considering information sources.
+FORMAT_SPEC_TEMPLATE = """Преобразуй следующий текст в формат спецификации.
+Используй контекст из проекта с учётом источников информации.
 
-## Project Context (with sources)
+## Контекст из проекта (с источниками)
 {context}
 
-## Explanation of Sources:
-- 🧑 Human-in-the-Loop = 100% reliability (user selected)
-- ⭐ Smart Select / 🧠 Total Recall = 95% reliability
-- 🔍 Embeddings = 70-80% reliability
+## Пояснение по источникам:
+- 🧑 Human-in-the-Loop = 100% надёжность (пользователь выбрал)
+- ⭐ Smart Select / 🧠 Total Recall = 95% надёжность
+- 🔍 Embeddings = 70-80% надёжность
 
-## Source Text
+## Исходный текст
 {text}
 
-Output format:
+Формат вывода:
 ---
-title: [title]
+title: [заголовок]
 date: {date}
 status: Draft
 ---
 
-# [title]
+# [заголовок]
 
 ## Overview
-[overview from text]
+[обзор из текста]
 
 ## Requirements
-[requirements]
+[требования]
 
 ## Technical Details
-[technical details]
+[технические детали]
 
-## References (with sources)
-[links to files from context with source specified]"""
+## References (с источниками)
+[ссылки на файлы из контекста с указанием источника]"""
 
 
 # ============================================================================
@@ -261,7 +259,7 @@ class VoiceProcessor:
         """Lazy-load UnifiedSearcher for context search."""
         if self._searcher is None:
             try:
-                from automation.semantic_search import UnifiedSearcher
+                from docs.automation.semantic_search import UnifiedSearcher
                 self._searcher = UnifiedSearcher()
                 logger.info("UnifiedSearcher loaded")
             except ImportError as e:
@@ -272,7 +270,7 @@ class VoiceProcessor:
         """Lazy-load DocsDualMemory for embeddings search."""
         if self._dual_memory is None:
             try:
-                from utils.docs_dual_memory import DocsDualMemory
+                from docs.utils.docs_dual_memory import DocsDualMemory
                 self._dual_memory = DocsDualMemory()
                 logger.info("DocsDualMemory loaded")
             except ImportError as e:
@@ -300,11 +298,11 @@ class VoiceProcessor:
             return text
         
         # Build enhancement prompt
-        prompt = ENHANCE_PROMPT_EN.format(text=text)
+        prompt = ENHANCE_PROMPT_RU.format(text=text)
         
         # Call LLM for enhancement
         result = self.llm.generate(
-            system_prompt="You are a text correction assistant. Respond only with the corrected text.",
+            system_prompt="Ты помощник по исправлению текста. Отвечай только исправленным текстом.",
             user_prompt=prompt,
             temperature=0.3,  # Low temperature for consistency
             max_tokens=len(text) * 3  # Allow for expansion
@@ -402,7 +400,7 @@ class VoiceProcessor:
     def _format_context_for_prompt(self, results: List[SearchResultItem]) -> str:
         """Format search results as context string for prompts."""
         if not results:
-            return "(context not found)"
+            return "(контекст не найден)"
         
         lines = []
         for i, r in enumerate(results[:5], 1):
@@ -426,7 +424,7 @@ class VoiceProcessor:
         )
         
         result = self.llm.generate(
-            system_prompt="Format the text into a structured prompt.",
+            system_prompt="Форматируй текст в структурированный промпт.",
             user_prompt=prompt,
             temperature=0.4,
             max_tokens=2000
@@ -446,7 +444,7 @@ class VoiceProcessor:
         )
         
         result = self.llm.generate(
-            system_prompt="Format the text as a ticket/task.",
+            system_prompt="Форматируй текст как тикет/задачу.",
             user_prompt=prompt,
             temperature=0.4,
             max_tokens=2000
@@ -465,7 +463,7 @@ class VoiceProcessor:
         )
         
         result = self.llm.generate(
-            system_prompt="Format the text as a specification.",
+            system_prompt="Форматируй текст как спецификацию.",
             user_prompt=prompt,
             temperature=0.4,
             max_tokens=3000

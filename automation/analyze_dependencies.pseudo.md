@@ -1,108 +1,108 @@
 ---
-description: "Извлекает 5 слоёв зависимостей из Python-файлов через AST-анализ"
+description: "Extracts 5 layers of dependencies from Python files via AST analysis"
 date: 2025-12-12
 version: "2.0"
 source_file: analyze_dependencies.py
 tags: automation, dependencies, AST, analysis, dynamic-imports
 ---
 
-# analyze_dependencies.py v2.0 — Псевдокод
+# analyze_dependencies.py v2.0 — Pseudocode
 
 <!--TAG:pseudo_analyze_dependencies-->
 
 ## PURPOSE
 
-Выполняет алгоритмический анализ Python-кода для извлечения 5 слоёв зависимостей:
+Performs algorithmic analysis of Python code to extract 5 layers of dependencies:
 
-1. **Code Layer** — импорты, вызовы функций, иерархия классов, экспорты
-2. **Configuration Layer** — файлы конфигурации, переменные окружения, CLI-аргументы
-3. **Data Layer** — файловые операции чтения/записи
-4. **External Layer** — API-вызовы, внешние библиотеки
-5. **Orchestration Layer** — точки входа, subprocess-вызовы
+1. **Code Layer** — imports, function calls, class hierarchy, exports
+2. **Configuration Layer** — configuration files, environment variables, CLI arguments
+3. **Data Layer** — file read/write operations
+4. **External Layer** — API calls, external libraries
+5. **Orchestration Layer** — entry points, subprocess calls
 
 ### v2.0 Enhancements
-- Извлечение аргументов декораторов (`@lru_cache(maxsize=128)`)
-- Резолюция относительных импортов (`from ..utils import helper`)
-- Детекция динамических импортов (`importlib.import_module()`, `__import__()`)
-- Обнаружение метаклассов (`class Foo(metaclass=ABCMeta)`)
+- Extraction of decorator arguments (`@lru_cache(maxsize=128)`)
+- Resolution of relative imports (`from ..utils import helper`)
+- Detection of dynamic imports (`importlib.import_module()`, `__import__()`)
+- Discovery of metaclasses (`class Foo(metaclass=ABCMeta)`)
 
 ---
 
-## ЗАВИСИМОСТИ
+## DEPENDENCIES
 
 ```
-Внутренние (docs/):
-    - docs.utils.docs_logger.DocsLogger  # Изолированный логгер
+Internal (docs/):
+    - docs.utils.docs_logger.DocsLogger  # Isolated logger
 
-Стандартная библиотека:
-    - ast                # AST-парсинг Python-кода
-    - json               # Сериализация результатов
-    - re                 # Регулярные выражения для динамических импортов
-    - dataclasses        # Структуры данных
-    - pathlib.Path       # Работа с путями
+Standard Library:
+    - ast                # AST parsing of Python code
+    - json               # Result serialization
+    - re                 # Regular expressions for dynamic imports
+    - dataclasses        # Data structures
+    - pathlib.Path       # Path manipulation
 
-Данные:
-    - Input:  *.py файлы
+Data:
+    - Input:  *.py files
     - Output: docs/memory/dependencies/*_dependencies.json
 ```
 
 ---
 
-## СТРУКТУРЫ ДАННЫХ
+## DATA STRUCTURES
 
 ### DependencyInfo (dataclass)
 
 ```pseudo
 DATACLASS DependencyInfo:
-    file_path: STRING                   # Путь к анализируемому файлу
+    file_path: STRING                   # Path to analyzed file
     
     # === CODE LAYER ===
     imports: LIST[{
-        module: STRING,                 # Имя модуля
-        name: STRING?,                  # Импортируемое имя (для from...import)
-        alias: STRING?,                 # Алиас (as ...)
-        line: INT,                      # Номер строки
-        is_relative: BOOL,              # Относительный импорт?
-        level: INT,                     # Уровень (. = 1, .. = 2)
-        resolved_module: STRING         # v2.0: Абсолютный путь модуля
+        module: STRING,                 # Module name
+        name: STRING?,                  # Imported name (for from...import)
+        alias: STRING?,                 # Alias (as ...)
+        line: INT,                      # Line number
+        is_relative: BOOL,              # Relative import?
+        level: INT,                     # Level (. = 1, .. = 2)
+        resolved_module: STRING         # v2.0: Absolute module path
     }]
     
     function_calls: LIST[{
-        function: STRING,               # Имя функции
-        line: INT,                      # Номер строки
-        context: STRING?                # Контекст (имя функции/класса)
+        function: STRING,               # Function name
+        line: INT,                      # Line number
+        context: STRING?                # Context (function/class name)
     }]
     
     class_hierarchy: LIST[{
-        class: STRING,                  # Имя класса
-        bases: LIST[STRING],            # Базовые классы
-        metaclass: STRING?,             # v2.0: Метакласс (если есть)
-        has_dynamic_behavior: BOOL,     # v2.0: __new__, __init_subclass__ и т.д.
-        decorators: LIST[DecoratorInfo],# v2.0: Декораторы класса
-        line: INT                       # Номер строки
+        class: STRING,                  # Class name
+        bases: LIST[STRING],            # Base classes
+        metaclass: STRING?,             # v2.0: Metaclass (if any)
+        has_dynamic_behavior: BOOL,     # v2.0: __new__, __init_subclass__, etc.
+        decorators: LIST[DecoratorInfo],# v2.0: Class decorators
+        line: INT                       # Line number
     }]
     
-    exports: LIST[STRING]               # Публичные функции/классы
+    exports: LIST[STRING]               # Public functions/classes
     
-    # v2.0: Расширенные определения функций
+    # v2.0: Extended function definitions
     function_definitions: LIST[{
-        name: STRING,                   # Имя функции
-        args: LIST[ArgInfo],            # Аргументы с аннотациями
-        decorators: LIST[DecoratorInfo],# v2.0: Полная информация о декораторах
-        line: INT,                      # Номер строки
-        is_async: BOOL,                 # Асинхронная функция?
-        class: STRING?                  # Родительский класс (если метод)
+        name: STRING,                   # Function name
+        args: LIST[ArgInfo],            # Arguments with annotations
+        decorators: LIST[DecoratorInfo],# v2.0: Full decorator info
+        line: INT,                      # Line number
+        is_async: BOOL,                 # Async function?
+        class: STRING?                  # Parent class (if method)
     }]
     
-    # v2.0: Динамические импорты
+    # v2.0: Dynamic imports
     dynamic_imports: LIST[{
-        type: "dynamic_import",         # Тип записи
-        pattern: STRING,                # Тип паттерна (importlib, __import__, etc.)
-        module: STRING,                 # Имя модуля (или переменная)
-        line: INT,                      # Номер строки
-        confidence: "high"|"medium"|"low",  # Уверенность в детекции
-        warning: STRING,                # Предупреждение для разработчика
-        is_variable: BOOL               # Модуль передан через переменную?
+        type: "dynamic_import",         # Record type
+        pattern: STRING,                # Pattern type (importlib, __import__, etc.)
+        module: STRING,                 # Module name (or variable)
+        line: INT,                      # Line number
+        confidence: "high"|"medium"|"low",  # Detection confidence
+        warning: STRING,                # Warning for developer
+        is_variable: BOOL               # Module passed via variable?
     }]
     
     # === CONFIGURATION LAYER ===
@@ -138,34 +138,34 @@ DATACLASS DependencyInfo:
     timestamp: ISO8601_STRING
 ```
 
-### DecoratorInfo (вспомогательная структура)
+### DecoratorInfo (helper structure)
 
 ```pseudo
 STRUCTURE DecoratorInfo:
-    name: STRING        # Имя декоратора (например, "lru_cache")
-    args: LIST[ANY]     # Позиционные аргументы
-    kwargs: DICT        # Именованные аргументы
+    name: STRING        # Decorator name (e.g., "lru_cache")
+    args: LIST[ANY]     # Positional arguments
+    kwargs: DICT        # Keyword arguments
 ```
 
-### ArgInfo (вспомогательная структура)
+### ArgInfo (helper structure)
 
 ```pseudo
 STRUCTURE ArgInfo:
-    name: STRING        # Имя аргумента
-    type: "arg"|"vararg"|"kwarg"  # Тип (*args, **kwargs)
-    annotation: STRING? # Аннотация типа
+    name: STRING        # Argument name
+    type: "arg"|"vararg"|"kwarg"  # Type (*args, **kwargs)
+    annotation: STRING? # Type annotation
 ```
 
 ---
 
-## КЛАСС: DynamicImportDetector (v2.0)
+## CLASS: DynamicImportDetector (v2.0)
 
-Детектирует динамические импорты, которые AST не может полностью разрешить.
+Detects dynamic imports that AST cannot fully resolve.
 
 ```pseudo
 CLASS DynamicImportDetector:
     
-    # Regex-паттерны для детекции
+    # Regex patterns for detection
     PATTERNS = {
         "importlib":        r'importlib\.import_module\s*\(\s*["\']([^"\']+)["\']\s*\)',
         "importlib_var":    r'importlib\.import_module\s*\(\s*(\w+)\s*\)',
@@ -178,7 +178,7 @@ CLASS DynamicImportDetector:
     
     FUNCTION detect_dynamic_imports(source_code: STRING, file_path: STRING) -> LIST:
         """
-        Детектирует динамические импорты через regex + эвристики.
+        Detects dynamic imports via regex + heuristics.
         """
         results = []
         
@@ -187,13 +187,13 @@ CLASS DynamicImportDetector:
                 matches = regex.findall(source_code)
                 
                 FOR EACH match IN matches:
-                    # Извлечь имя модуля
+                    # Extract module name
                     module_name = match.group(1) OR "unknown"
                     
-                    # Вычислить номер строки
+                    # Calculate line number
                     line_num = COUNT newlines before match + 1
                     
-                    # Определить уверенность
+                    # Determine confidence
                     IF "_var" IN pattern_name:
                         confidence = "low"
                         warning = "Dynamic import with variable - cannot resolve statically"
@@ -206,7 +206,7 @@ CLASS DynamicImportDetector:
                     
                     APPEND TO results: {
                         type: "dynamic_import",
-                        pattern: pattern_name (без _var),
+                        pattern: pattern_name (without _var),
                         module: module_name,
                         line: line_num,
                         confidence: confidence,
@@ -223,9 +223,9 @@ CLASS DynamicImportDetector:
 
 ---
 
-## КЛАСС: DependencyAnalyzer (AST Visitor)
+## CLASS: DependencyAnalyzer (AST Visitor)
 
-### Инициализация
+### Initialization
 
 ```pseudo
 CLASS DependencyAnalyzer EXTENDS ast.NodeVisitor:
@@ -235,39 +235,39 @@ CLASS DependencyAnalyzer EXTENDS ast.NodeVisitor:
         self.project_root = project_root OR parent(parent(file_path))
         self.deps = NEW DependencyInfo(file_path)
         
-        # Контекст для отслеживания текущей позиции в AST
+        # Context for tracking current position in AST
         self.current_class = None
         self.current_function = None
 ```
 
-### v2.0: Анализ декораторов
+### v2.0: Decorator Analysis
 
 ```pseudo
 FUNCTION _analyze_decorator(decorator_node) -> DecoratorInfo:
     """
-    Извлекает имя декоратора и его аргументы.
+    Extracts decorator name and its arguments.
     
-    Примеры:
+    Examples:
         @property              -> {name: "property", args: [], kwargs: {}}
         @lru_cache(maxsize=128) -> {name: "lru_cache", args: [], kwargs: {maxsize: 128}}
         @app.route("/api")     -> {name: "app.route", args: ["/api"], kwargs: {}}
     """
     IF decorator IS ast.Name:
-        # Простой декоратор: @property
+        # Simple decorator: @property
         RETURN {name: decorator.id, args: [], kwargs: {}}
     
     ELIF decorator IS ast.Attribute:
-        # Декоратор с атрибутом: @module.decorator
+        # Decorator with attribute: @module.decorator
         RETURN {name: GET_FULL_NAME(decorator), args: [], kwargs: {}}
     
     ELIF decorator IS ast.Call:
-        # Декоратор с аргументами: @decorator(arg1, key=val)
+        # Decorator with arguments: @decorator(arg1, key=val)
         name = GET_NAME(decorator.func)
         
-        # Позиционные аргументы
+        # Positional arguments
         args = [GET_VALUE(arg) FOR arg IN decorator.args]
         
-        # Именованные аргументы
+        # Keyword arguments
         kwargs = {kw.arg: GET_VALUE(kw.value) FOR kw IN decorator.keywords IF kw.arg}
         
         RETURN {name: name, args: args, kwargs: kwargs}
@@ -275,37 +275,37 @@ FUNCTION _analyze_decorator(decorator_node) -> DecoratorInfo:
     RETURN {name: "unknown", args: [], kwargs: {}}
 ```
 
-### v2.0: Резолюция относительных импортов
+### v2.0: Relative Import Resolution
 
 ```pseudo
 FUNCTION _resolve_relative_import(relative_module: STRING, level: INT) -> STRING:
     """
-    Преобразует относительный импорт в абсолютный путь модуля.
+    Transforms a relative import into an absolute module path.
     
-    Примеры:
+    Examples:
         from . import utils       (level=1) -> current_package.utils
         from ..core import base   (level=2) -> parent_package.core.base
     """
     TRY:
         file_path = Path(self.file_path)
         
-        # Получить структуру пакета из пути файла
+        # Get package structure from file path
         IF self.project_root AND file_path.is_absolute():
             relative_path = file_path.relative_to(self.project_root)
-            package_parts = relative_path.parts[:-1]  # Убрать имя файла
+            package_parts = relative_path.parts[:-1]  # Remove file name
         ELSE:
             package_parts = file_path.parts[:-1]
         
-        # Подняться на level директорий вверх
+        # Go up level directories
         IF level > LENGTH(package_parts):
             LOG warning "Can't resolve import level {level}"
             RETURN relative_module OR ""
         
-        # Вычислить базовый пакет
+        # Calculate base package
         base_parts = package_parts[:-level] IF level > 0 ELSE package_parts
         base_package = JOIN(base_parts, ".")
         
-        # Объединить с относительным модулем
+        # Merge with relative module
         IF relative_module:
             RETURN "{base_package}.{relative_module}" IF base_package ELSE relative_module
         RETURN base_package
@@ -315,11 +315,11 @@ FUNCTION _resolve_relative_import(relative_module: STRING, level: INT) -> STRING
         RETURN relative_module OR ""
 ```
 
-### visit_Import — Обработка import statements
+### visit_Import — Process import statements
 
 ```pseudo
 FUNCTION visit_Import(node):
-    # Пример: import os, sys as system
+    # Example: import os, sys as system
     FOR EACH alias IN node.names:
         APPEND TO self.deps.imports: {
             module: alias.name,
@@ -332,18 +332,18 @@ FUNCTION visit_Import(node):
     CONTINUE visiting children
 ```
 
-### visit_ImportFrom — Обработка from...import statements
+### visit_ImportFrom — Process from...import statements
 
 ```pseudo
 FUNCTION visit_ImportFrom(node):
     """
-    Пример: from utils.helpers import foo
-    Пример v2.0: from ..core import base (относительный импорт)
+    Example: from utils.helpers import foo
+    Example v2.0: from ..core import base (relative import)
     """
     module = node.module OR ""
     is_relative = node.level > 0
     
-    # v2.0: Резолюция относительных импортов
+    # v2.0: Relative import resolution
     IF is_relative:
         resolved_module = CALL _resolve_relative_import(module, node.level)
     ELSE:
@@ -363,30 +363,30 @@ FUNCTION visit_ImportFrom(node):
     CONTINUE visiting children
 ```
 
-### visit_ClassDef — Обработка классов (v2.0: метаклассы)
+### visit_ClassDef — Process classes (v2.0: metaclasses)
 
 ```pseudo
 FUNCTION visit_ClassDef(node):
     """
-    Обрабатывает определение класса с детекцией метаклассов.
+    Processes class definition with metaclass detection.
     """
-    # Извлечь базовые классы
+    # Extract base classes
     bases = [GET_NAME(base) FOR base IN node.bases]
     
-    # v2.0: Детекция метакласса
+    # v2.0: Metaclass detection
     metaclass = None
     FOR EACH keyword IN node.keywords:
         IF keyword.arg == "metaclass":
             metaclass = GET_NAME(keyword.value)
     
-    # v2.0: Детекция динамического поведения
+    # v2.0: Dynamic behavior detection
     has_dynamic_behavior = metaclass IS NOT None
     FOR EACH item IN node.body:
         IF item IS FunctionDef AND item.name IN ["__new__", "__init_subclass__", "__class_getitem__"]:
             has_dynamic_behavior = True
             BREAK
     
-    # v2.0: Извлечь декораторы класса
+    # v2.0: Extract class decorators
     class_decorators = [_analyze_decorator(d) FOR d IN node.decorator_list]
     
     APPEND TO self.deps.class_hierarchy: {
@@ -398,28 +398,28 @@ FUNCTION visit_ClassDef(node):
         line: node.lineno
     }
     
-    # Добавить в экспорты если публичный
+    # Add to exports if public
     IF NOT node.name.startswith("_"):
         APPEND node.name TO self.deps.exports
     
-    # Продолжить обход с обновлённым контекстом
+    # Continue traversal with updated context
     old_class = self.current_class
     self.current_class = node.name
     CONTINUE visiting children
     self.current_class = old_class
 ```
 
-### visit_FunctionDef — Обработка функций (v2.0: декораторы с аргументами)
+### visit_FunctionDef — Process functions (v2.0: decorators with arguments)
 
 ```pseudo
 FUNCTION visit_FunctionDef(node):
     """
-    Обрабатывает определение функции с полным анализом декораторов.
+    Processes function definition with full decorator analysis.
     """
-    # v2.0: Анализ декораторов с аргументами
+    # v2.0: Analysis of decorators with arguments
     decorators_info = [_analyze_decorator(d) FOR d IN node.decorator_list]
     
-    # Извлечь аргументы функции
+    # Extract function arguments
     args_info = _extract_function_args(node.args)
     
     APPEND TO self.deps.function_definitions: {
@@ -431,11 +431,11 @@ FUNCTION visit_FunctionDef(node):
         class: self.current_class
     }
     
-    # Добавить в экспорты если публичный
+    # Add to exports if public
     IF NOT node.name.startswith("_"):
         APPEND node.name TO self.deps.exports
     
-    # Проверка на entry point
+    # Entry point check
     IF node.name == "main":
         APPEND TO self.deps.entry_points: {
             type: "main_function",
@@ -443,25 +443,25 @@ FUNCTION visit_FunctionDef(node):
             line: node.lineno
         }
     
-    # Проверка на CLI-аргументы внутри функции
+    # Check for CLI arguments inside function
     FOR EACH child IN ast.walk(node):
         IF child IS Call AND "argparse" IN GET_CALL_NAME(child):
             CALL _analyze_cli_args(node)
             BREAK
     
-    # Продолжить обход с обновлённым контекстом
+    # Continue traversal with updated context
     old_function = self.current_function
     self.current_function = node.name
     CONTINUE visiting children
     self.current_function = old_function
 ```
 
-### visit_AsyncFunctionDef — Обработка async-функций (v2.0)
+### visit_AsyncFunctionDef — Process async functions (v2.0)
 
 ```pseudo
 FUNCTION visit_AsyncFunctionDef(node):
     """
-    Аналогично visit_FunctionDef, но для async def.
+    Similar to visit_FunctionDef, but for async def.
     """
     decorators_info = [_analyze_decorator(d) FOR d IN node.decorator_list]
     args_info = _extract_function_args(node.args)
@@ -471,7 +471,7 @@ FUNCTION visit_AsyncFunctionDef(node):
         args: args_info,
         decorators: decorators_info,
         line: node.lineno,
-        is_async: True,  # Отличие от sync-функций
+        is_async: True,  # Difference from sync functions
         class: self.current_class
     }
     
@@ -481,34 +481,34 @@ FUNCTION visit_AsyncFunctionDef(node):
     CONTINUE visiting children
 ```
 
-### visit_Call — Обработка вызовов функций
+### visit_Call — Process function calls
 
 ```pseudo
 FUNCTION visit_Call(node):
     func_name = GET_CALL_NAME(node)
     
     IF func_name:
-        # Детекция файловых операций
+        # File operations detection
         IF func_name IN ["open", "Path", "read", "write", "load", "dump"]:
             CALL _analyze_file_operation(node, func_name)
         
-        # Детекция загрузки конфигов
+        # Config loading detection
         ELIF "config" OR "yaml" OR "json" IN func_name.lower():
             CALL _analyze_config_operation(node, func_name)
         
-        # Детекция переменных окружения
+        # Environment variables detection
         ELIF "getenv" OR "environ" IN func_name:
             CALL _analyze_env_var(node, func_name)
         
-        # Детекция API-вызовов
+        # API calls detection
         ELIF "request" OR "post" OR "api" OR "client" IN func_name.lower():
             CALL _analyze_api_call(node, func_name)
         
-        # Детекция subprocess
+        # Subprocess detection
         ELIF "subprocess" OR "Popen" OR "run" OR "call" OR "system" IN func_name:
             CALL _analyze_subprocess(node, func_name)
         
-        # Записать вызов функции
+        # Record function call
         APPEND TO self.deps.function_calls: {
             function: func_name,
             line: node.lineno,
@@ -518,14 +518,14 @@ FUNCTION visit_Call(node):
     CONTINUE visiting children
 ```
 
-### Вспомогательные методы
+### Helper methods
 
 ```pseudo
 FUNCTION _extract_function_args(args: ast.arguments) -> LIST[ArgInfo]:
-    """Извлекает информацию об аргументах функции."""
+    """Extracts information about function arguments."""
     result = []
     
-    # Обычные аргументы
+    # Regular arguments
     FOR EACH arg IN args.args:
         arg_info = {name: arg.arg, type: "arg"}
         IF arg.annotation:
@@ -544,8 +544,8 @@ FUNCTION _extract_function_args(args: ast.arguments) -> LIST[ArgInfo]:
 
 FUNCTION _get_value(node: ast.expr) -> ANY:
     """
-    Извлекает Python-значение из AST-узла.
-    Поддерживает: константы, имена, списки, словари, вызовы.
+    Extracts Python value from AST node.
+    Supports: constants, names, lists, dicts, calls.
     """
     MATCH node:
         ast.Constant -> RETURN node.value
@@ -599,27 +599,27 @@ FUNCTION _analyze_cli_args(node):
 
 ---
 
-## АЛГОРИТМ: analyze_file(file_path, project_root)
+## ALGORITHM: analyze_file(file_path, project_root)
 
 ```pseudo
 FUNCTION analyze_file(file_path: PATH, project_root: PATH = None) -> DependencyInfo?:
     TRY:
-        # Шаг 1: Чтение исходного кода
+        # Step 1: Read source code
         source_code = READ file_path AS UTF-8
         
-        # Шаг 2: Парсинг в AST
+        # Step 2: Parse into AST
         tree = ast.parse(source_code, filename=str(file_path))
         
-        # Шаг 3: AST-анализ
+        # Step 3: AST analysis
         analyzer = NEW DependencyAnalyzer(file_path, project_root)
         analyzer.visit(tree)
         
-        # Шаг 4 (v2.0): Детекция динамических импортов
+        # Step 4 (v2.0): Dynamic import detection
         detector = NEW DynamicImportDetector()
         dynamic_imports = detector.detect_dynamic_imports(source_code, file_path)
         analyzer.deps.dynamic_imports = dynamic_imports
         
-        # Шаг 5: Проверка на __main__ entry point
+        # Step 5: Check for __main__ entry point
         IF "__name__" IN source_code AND "__main__" IN source_code:
             main_pos = FIND "__main__" IN source_code
             line_num = COUNT newlines before main_pos + 1
@@ -629,7 +629,7 @@ FUNCTION analyze_file(file_path: PATH, project_root: PATH = None) -> DependencyI
                 line: line_num
             }
         
-        # Шаг 6 (v2.0): Генерация метаданных
+        # Step 6 (v2.0): Metadata generation
         analyzer.deps.metadata = {
             total_functions: LENGTH(analyzer.deps.function_definitions),
             total_classes: LENGTH(analyzer.deps.class_hierarchy),
@@ -652,19 +652,19 @@ FUNCTION analyze_file(file_path: PATH, project_root: PATH = None) -> DependencyI
 
 ---
 
-## АЛГОРИТМ: analyze_directory(dir_path, output_dir, project_root)
+## ALGORITHM: analyze_directory(dir_path, output_dir, project_root)
 
 ```pseudo
 FUNCTION analyze_directory(dir_path: PATH, output_dir: PATH, project_root: PATH = None):
-    # Создать выходную директорию
+    # Create output directory
     CREATE output_dir IF NOT EXISTS
     
     files_processed = 0
     files_failed = 0
     
-    # Рекурсивный обход Python-файлов
+    # Recursive traversal of Python files
     FOR EACH py_file IN GLOB(dir_path, "**/*.py"):
-        # Пропустить нежелательные директории
+        # Skip unwanted directories
         IF "__pycache__" OR "vllm-latest" IN py_file:
             CONTINUE
         
@@ -672,7 +672,7 @@ FUNCTION analyze_directory(dir_path: PATH, output_dir: PATH, project_root: PATH 
         deps = CALL analyze_file(py_file, project_root)
         
         IF deps:
-            # Сохранить в JSON
+            # Save to JSON
             relative_path = py_file.relative_to(dir_path.parent)
             output_file = output_dir / "{relative_path.stem}_dependencies.json"
             CREATE output_file.parent IF NOT EXISTS
@@ -692,11 +692,11 @@ FUNCTION analyze_directory(dir_path: PATH, output_dir: PATH, project_root: PATH 
 
 ```pseudo
 ARGUMENTS:
-    --target PATH       # Анализ одного файла
-    --target-dir PATH   # Анализ директории  
-    --all               # Анализ всего проекта (processing/, utils/, scripts/, docs/automation/)
-    --output-dir PATH   # Выходная директория (default: docs/memory/dependencies)
-    --version           # Показать версию (v2.0)
+    --target PATH       # Single file analysis
+    --target-dir PATH   # Directory analysis  
+    --all               # Entire project analysis (processing/, utils/, scripts/, docs/automation/)
+    --output-dir PATH   # Output directory (default: docs/memory/dependencies)
+    --version           # Show version (v2.0)
 
 ENTRY POINT main():
     PARSE arguments
@@ -745,30 +745,28 @@ ENTRY POINT main():
         PRINT help
 ```
 
----
-
-## ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ
+## USAGE EXAMPLES
 
 ```bash
-# Анализ одного файла
+# Analyze single file
 python3 docs/automation/analyze_dependencies.py --target utils/dual_memory.py
 
-# Анализ директории
+# Analyze directory
 python3 docs/automation/analyze_dependencies.py --target-dir processing/
 
-# Анализ всего проекта
+# Analyze entire project
 python3 docs/automation/analyze_dependencies.py --all
 
-# Кастомная выходная директория
+# Custom output directory
 python3 docs/automation/analyze_dependencies.py --target file.py --output-dir custom/path
 
-# Проверка версии
+# Version check
 python3 docs/automation/analyze_dependencies.py --version
 ```
 
 ---
 
-## ВЫХОДНОЙ JSON (пример)
+## OUTPUT JSON (example)
 
 ```json
 {

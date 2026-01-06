@@ -5,7 +5,7 @@ NSS-Spec IDE - Browser-based Specification Generation IDE
 <!--TAG:tool_nss_spec_ide-->
 
 PURPOSE: Spec-First IDE for generating specifications, documentation, and tickets.
-         Uses 6-stage pipeline with 24 buttons. Кодинговые агенты исполняют спецификации.
+         Uses 6-stage pipeline with 24 buttons. Coding agents execute specifications.
 
 DOCUMENTATION:
     Spec: docs/specs/nss_spec_ide_vision.md
@@ -68,35 +68,35 @@ STAGES = {
     # Stage -1: Deep Context Understanding
     "-1": {
         "name": "🔮 Deep Context",
-        "description": "Глубокое понимание контекста: проблема, картина, экосистема",
+        "description": "Deep context understanding: problem, big picture, ecosystem",
         "color": "#f97316",  # orange
         "buttons": [
             {"id": "primary_problem", "label": "🎯 Primary Problem", "action": "analyze_primary_problem"},
             {"id": "global_picture", "label": "🌐 Global Picture", "action": "create_global_picture"},
             {"id": "ecosystem_map", "label": "🔗 Ecosystem Map", "action": "map_ecosystem"},
             {"id": "failure_scenarios", "label": "💀 Failure Scenarios", "action": "analyze_failures"},
-            {"id": "summary_m1", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_m1", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage -0.5: True Needs Discovery
     "-0.5": {
         "name": "❓ True Needs",
-        "description": "Выявление истинных потребностей: 5 Whys, JTBD, User Stories",
+        "description": "Identifying true needs: 5 Whys, JTBD, User Stories",
         "color": "#eab308",  # yellow
         "buttons": [
             {"id": "five_whys", "label": "❓ 5 Whys", "action": "analyze_5_whys"},
             {"id": "jtbd", "label": "💼 JTBD", "action": "jobs_to_be_done"},
             {"id": "user_story_map", "label": "📊 User Story Map", "action": "create_user_story_map"},
             {"id": "process_mining", "label": "⛏️ Process Mining", "action": "process_mining"},
-            {"id": "summary_m05", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_m05", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 0: Philosophy & Alternatives
     "0": {
         "name": "🧠 Philosophy",
-        "description": "Философский анализ и альтернативы: Deep Research, Build vs Buy",
+        "description": "Philosophical analysis and alternatives: Deep Research, Build vs Buy",
         "color": "#84cc16",  # lime
         "buttons": [
             {"id": "voice_input", "label": "🎤 Voice", "action": "capture_voice"},
@@ -104,14 +104,14 @@ STAGES = {
             {"id": "deep_research", "label": "🔍 Deep Research", "action": "deep_research", "placeholder": True},
             {"id": "alternatives", "label": "🔀 Alternatives", "action": "analyze_alternatives"},
             {"id": "build_vs_buy", "label": "🏗️ Build vs Buy", "action": "build_vs_buy"},
-            {"id": "summary_0", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_0", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 1: Architecture Vision
     "1": {
         "name": "🏛️ Architecture",
-        "description": "Архитектурное видение: компоненты, паттерны, структуры данных",
+        "description": "Architectural vision: components, patterns, data structures",
         "color": "#22c55e",  # green
         "buttons": [
             {"id": "components", "label": "🧱 Components", "action": "design_components"},
@@ -119,84 +119,84 @@ STAGES = {
             {"id": "data_structures", "label": "📊 Data Structures", "action": "design_data_structures"},
             {"id": "hardware_aware", "label": "⚡ Hardware-Aware", "action": "hardware_optimization"},
             {"id": "diagrams", "label": "📐 Diagrams", "action": "generate_diagrams"},
-            {"id": "summary_1", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_1", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 2: UI/CLI Design
     "2": {
         "name": "🖥️ UI/CLI Design",
-        "description": "Дизайн интерфейса: GUI wireframes, CLI commands, Error UX",
+        "description": "Interface design: GUI wireframes, CLI commands, Error UX",
         "color": "#14b8a6",  # teal
         "buttons": [
             {"id": "interface_type", "label": "🔧 Interface Type", "action": "define_interface_type"},
             {"id": "gui_wireframes", "label": "🖼️ GUI Wireframes", "action": "create_wireframes"},
             {"id": "cli_commands", "label": "💻 CLI Commands", "action": "design_cli"},
             {"id": "error_handling", "label": "⚠️ Error UX", "action": "design_error_ux"},
-            {"id": "summary_2", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_2", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 3: Technical Specification
     "3": {
         "name": "📋 Tech Spec",
-        "description": "Техническая спецификация: FR, NFR, API, Edge Cases",
+        "description": "Technical specification: FR, NFR, API, Edge Cases",
         "color": "#3b82f6",  # blue
         "buttons": [
             {"id": "functional_req", "label": "📝 Functional Req", "action": "write_functional_req"},
             {"id": "nonfunctional_req", "label": "⚙️ Non-Functional", "action": "write_nonfunctional_req"},
             {"id": "api_spec", "label": "🔌 API Spec", "action": "write_api_spec"},
             {"id": "edge_cases", "label": "🔪 Edge Cases", "action": "analyze_edge_cases"},
-            {"id": "summary_3", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_3", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 4: Holographic Tickets
     "4": {
         "name": "🎫 Holographic Tickets",
-        "description": "Голографические тикеты: ~700 токенов, семантические теги",
+        "description": "Holographic tickets: ~700 tokens, semantic tags",
         "color": "#8b5cf6",  # violet
         "buttons": [
             {"id": "decompose_700", "label": "✂️ Decompose (~700)", "action": "decompose_cognitive_units"},
             {"id": "holographic", "label": "🔮 Holographic", "action": "create_holographic_tickets"},
             {"id": "semantic_tags", "label": "🏷️ Semantic Tags", "action": "add_semantic_tags"},
             {"id": "ticket_index", "label": "📇 Index", "action": "create_ticket_index"},
-            {"id": "summary_4", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_4", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 5: Pseudocode & Semantic Glue
     "5": {
         "name": "💻 Pseudocode",
-        "description": "Псевдокод и семантический клей: 80-90% комментариев",
+        "description": "Pseudocode and semantic glue: 80-90% comments",
         "color": "#a855f7",  # purple
         "buttons": [
             {"id": "pseudocode", "label": "📜 Pseudocode", "action": "write_pseudocode"},
             {"id": "semantic_glue", "label": "🍯 Semantic Glue 90%", "action": "add_semantic_glue"},
             {"id": "ascii_diagrams", "label": "📊 ASCII Diagrams", "action": "create_ascii_diagrams"},
             {"id": "complexity", "label": "📈 Complexity", "action": "analyze_complexity"},
-            {"id": "summary_5", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_5", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 6: Code Specification
     "6": {
         "name": "📦 Code Spec",
-        "description": "Спецификация кода: сигнатуры, структура файлов, naming",
+        "description": "Code specification: signatures, file structure, naming",
         "color": "#ec4899",  # pink
         "buttons": [
             {"id": "function_sigs", "label": "📝 Function Sigs", "action": "define_function_signatures"},
             {"id": "file_structure", "label": "📁 File Structure", "action": "design_file_structure"},
             {"id": "naming", "label": "🏷️ Naming", "action": "define_naming_conventions"},
             {"id": "assembly_markers", "label": "🔧 Assembly Markers", "action": "add_assembly_markers"},
-            {"id": "summary_6", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_6", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 7: Verification Plan
     "7": {
         "name": "✅ Verification",
-        "description": "План верификации: Unit, Integration, Performance, Adversarial",
+        "description": "Verification plan: Unit, Integration, Performance, Adversarial",
         "color": "#f43f5e",  # rose
         "buttons": [
             {"id": "unit_tests", "label": "🧪 Unit Tests", "action": "spec_unit_tests"},
@@ -204,14 +204,14 @@ STAGES = {
             {"id": "performance_tests", "label": "⚡ Performance", "action": "spec_performance_tests"},
             {"id": "adversarial", "label": "👹 Adversarial AI", "action": "spec_adversarial_tests"},
             {"id": "manual_checklist", "label": "📝 Manual Checklist", "action": "create_manual_checklist"},
-            {"id": "summary_7", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_7", "label": "📋 Summary", "action": "summarize"}
         ]
     },
     
     # Stage 8: Handoff to Coding Agent
     "8": {
         "name": "🚀 Handoff",
-        "description": "Передача агенту: README, проверка полноты, промпты, пакет",
+        "description": "Handoff to agent: README, completeness check, prompts, package",
         "color": "#ef4444",  # red
         "buttons": [
             {"id": "readme", "label": "📖 README", "action": "generate_readme"},
@@ -219,7 +219,7 @@ STAGES = {
             {"id": "agent_prompts", "label": "🤖 Agent Prompts", "action": "generate_agent_prompts"},
             {"id": "split_agents", "label": "👥 Split (10)", "action": "split_to_agents"},
             {"id": "package", "label": "📦 Package", "action": "create_handoff_package"},
-            {"id": "summary_8", "label": "📋 Конспект", "action": "summarize"}
+            {"id": "summary_8", "label": "📋 Summary", "action": "summarize"}
         ]
     }
 }
@@ -839,10 +839,10 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="editor-container">
-                    <textarea class="editor" id="editor" placeholder="Текст появится здесь...
+                    <textarea class="editor" id="editor" placeholder="Text will appear here...
 
-🎤 Нажмите Voice для голосового ввода
-📝 Или введите текст вручную"></textarea>
+🎤 Click Voice for voice input
+📝 Or enter text manually"></textarea>
                 </div>
             </section>
             
@@ -855,7 +855,7 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
                         <button class="memory-btn" onclick="searchMemoryLite()">⚡ Lite</button>
                         <button class="memory-btn" onclick="searchEmbeddings()">🗄️ Emb</button>
                         <button class="memory-btn" onclick="searchNssDocs()">S NSS</button>
-                        <button class="memory-btn occam" onclick="occamRazor()">🔪 Оккам</button>
+                        <button class="memory-btn occam" onclick="occamRazor()">🔪 Occam</button>
                     </div>
                 </div>
                 <div class="memory-list" id="memoryList">
@@ -869,7 +869,7 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
     <div class="loading" id="loading">
         <div class="loading-content">
             <div class="spinner"></div>
-            <div id="loadingText">Загрузка...</div>
+            <div id="loadingText">Loading...</div>
         </div>
     </div>
     
