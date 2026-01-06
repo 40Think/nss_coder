@@ -1,5 +1,7 @@
 # NSS Coder — AI-First Documentation & Automation System
 
+**NSS** = **N**euro **S**ymbolic **S**emiotic
+
 ![Voicepal Architecture](automation/voicepal_architecture.png)
 
 > **Philosophy**: In the AI programming era, documentation is more important than code. This system serves as both AI memory and human reference.
