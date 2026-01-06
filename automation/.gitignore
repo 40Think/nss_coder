@@ -18,6 +18,9 @@ migrate_docs_structure.py
 migrate_to_standalone.py
 migrate_docs_structure.mmd
 restore_split.py
+extract_assets.py
+README.md
+README_pseudo.md
 voice_whisper_client.py
 
 # Logs
