@@ -10,6 +10,8 @@
 
 ## 🎯 What is This?
 
+![Concept 1](future_dev/images/1.png)
+
 **NSS Coder** is a standalone documentation automation system designed for **dual consumption**:
 
 ### For AI Agents
@@ -59,6 +61,8 @@ python3 automation/validate_system.py -p 3
 
 ## 📁 Project Structure
 
+![Concept 2](future_dev/images/2.png)
+
 ```
 nss_coder/
 ├── GEMINI.MD                    # Project constitution & AI rules
@@ -101,6 +105,8 @@ nss_coder/
 
 ## 🛠️ Automation Scripts
 
+![Concept 3](future_dev/images/3.png)
+
 | Script | Purpose | Quick Command |
 |--------|---------|---------------|
 | `search_by_tag.py` | Find by `<!--TAG:-->` | `--list-tags` |
@@ -122,6 +128,8 @@ See [automation/README.MD](automation/README.MD) for detailed documentation.
 ---
 
 ## 🖥️ NSS-Spec IDE: 10-Stage Specification Generator
+
+![Concept 4](future_dev/images/4.png)
 
 Located in `automation/nss_spec_ide.py` — browser-based IDE for spec-first development.
 
@@ -146,6 +154,8 @@ Located in `automation/nss_spec_ide.py` — browser-based IDE for spec-first dev
 ---
 
 ## 🎤 VoicePal v3: Voice-to-Specification System
+
+![Concept 5](future_dev/images/5.png)
 
 Located in `automation/voice_*.py` — revolutionary voice-first development system.
 
@@ -211,6 +221,8 @@ Located in `nss_django/` — plan for migrating prototypes to production Django.
 
 ## 📚 Documentation Layers
 
+![Concept 6](future_dev/images/6.jpg)
+
 We document **five interconnected layers**:
 
 | Layer | Description |
@@ -224,6 +236,8 @@ We document **five interconnected layers**:
 ---
 
 ## 📖 Documentation Philosophy
+
+![Concept 7](future_dev/images/7.jpg)
 
 > **Every task MUST begin and end with documentation work.**
 
@@ -411,10 +425,12 @@ logging:
 | [GEMINI.MD](GEMINI.MD) | Complete AI agent constitution |
 | [AGENT_ONBOARDING.md](AGENT_ONBOARDING.md) | AI agent quick start |
 | [automation/README.MD](automation/README.MD) | Automation tools guide |
-| [STANDALONE_SETUP.md](STANDALONE_SETUP.md) | Portable setup guide |
+
 
 ---
 
-**Version:** 4.0  
-**Last Updated:** 2026-01-08  
+
+
+**Version:** 4.1
+**Last Updated:** 2026-01-08
 **Status:** Active Development
