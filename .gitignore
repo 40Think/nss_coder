@@ -1,5 +1,5 @@
 # ============================================
-# NSS Coder - GitHub Release .gitignore
+# NSS Coder - .gitignore
 # ============================================
 
 # Python
@@ -20,36 +20,19 @@ engine.log
 # System packages
 *.deb
 
-# Development/internal directories (not for release)
+# Development/internal directories (not for public release)
 Eugene/
 BrainStep/
-docs/
 memory/
 nss_django/
 nss_docs_meta/
 engine_service/
 tests/
+tech_temp_files/
+docs/
 
-# Internal/system markdown files
-AGENT_ONBOARDING.md
-AUTOMATIC_DOCS_approach.md
-DOCUMENTATION_INDEX.md
-GEMINI.MD
-INDEPENDENT_REVIEW_BRIEF.md
-NSS_DOCS_README.md
-NSS_PROMPT.MD
-QUICK_START.md
-README_PROJECT.md
-STANDALONE_SETUP.md
-SYSTEM_PROMPT.md
-deep_research_ml_prompt.md
-validation_report.md
-vllm_setup_guide.md
-философия.md
-
-# Utility scripts (internal)
-fix_imports_portable.py
-start_voicepal.sh
+# Config with secrets
+config/docs_config.yaml
 
 # IDE
 .idea/
@@ -60,4 +43,3 @@ start_voicepal.sh
 # OS
 .DS_Store
 Thumbs.db
-config/docs_config.yaml
