@@ -1,4 +1,4 @@
-# NSS Coder — The Pathway to Digital Immortality
+# NSS Coder.
 
 ![Concept 10](future_dev/images/10.png)
 
@@ -82,6 +82,18 @@ Humans try to replicate human-centric development (readable code, conversational
     *   **Process**: We generate "Columns of Documentation"—hundreds of parallel streams.
     *   **Execution**: Because our Code/Docs ratio ensures ~100% reliability, we can launch **500 AI Agents simultaneously**.
 4.  **The Economic Reality**: Current AI development is a toy. Only by achieving this level of reliability and parallelism does it become **Industrial Production**.
+
+### 🛠️ Current Reality: Where Are We Now? (MVP Status)
+We are currently at **5% of the Vision**, but this 5% is already actionable.
+
+1.  **Status**: The **NSS-Spec IDE** works in your browser (localhost). It generates Specifications and searches documentation.
+    *   *Coding*: Still done in standard IDEs, but fueled by our specs.
+    *   *Parallelism*: We achieve this manually by distributing tasks (Specifications) across a directory tree, where each folder is a task for a separate agent.
+2.  **Cost**:
+    *   **Local**: Zero cost (Electricty only) if you run models on your own GPU/CPU.
+    *   **Cloud**: Qwen-2.5-Coder-32B tokens are extremely cheap (cents per million). You save huge money by not using expensive models (Claude/GPT-4) for routine tasks.
+3.  **Mind Reading?**: EEG is the future (Concept 8).
+    *   **Today**: We use **Deep Context** to "guess" your intent. If the system knows your entire project history, it predicts what you need without you enforcing it.
 
 ---
 

@@ -137,6 +137,22 @@ future_dev/
 
 ## 📊 Current State Overview
 
+### 🛠️ MVP Functionality: The "Assembler" Core
+
+**1. Browser-Based IDE & Specification Generation**
+![IDE Interface](images/4.png)
+*   **Function**: A local browser-based environment where you define the architecture. It generates formal specifications from your high-level intent.
+
+**2. Voice Recognition & Intent Capture**
+![Voice Workflow](images/5.png)
+![Architecture](images/10.png)
+*   **Function**: VoicePal engine recognizes complex voice commands and converts them into structured tasks, bypassing slow typing.
+
+**3. Context Assembly & Smart Search**
+![Project Structure](images/2.png)
+![Automation Scripts](images/3.png)
+*   **Function**: Automated scripts (`assemble_context.py`) search the entire project tree, find relevant files, and assemble the "Perfect Context" for AI agents.
+
 ### Philosophy Foundation (102 concepts)
 
 | Category | Files | Implementation Priority |

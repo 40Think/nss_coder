@@ -99,7 +99,7 @@ For each main script there is:
 
 ---
 
-### Success Criteria for Release 1.0
+### Success Criteria for Release 1.0 (codename Voicepal)
 
 #### Option A: Windows EXE (Standalone)
 
