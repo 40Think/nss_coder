@@ -1,6 +1,7 @@
 # NSS Coder — The Pathway to Digital Immortality
 
-![Concept 1](future_dev/images/1.png)
+![Concept 10](future_dev/images/10.png)
+
 
 ## 🌌 The Global Vision
 
@@ -67,7 +68,8 @@ To achieve these ambitious tasks, we must eliminate the first bottleneck: **Tran
 3.  **Context Injection**: We strictly define how document packages are formed and injected into the AI's context.
 4.  **Custom RAG & Memory**: We build our own scripts and memory architectures. Unlike industrial standards (vector soup), ours are designed for **precision, structure, and 100% recall**.
 
-![Concept 10](future_dev/images/10.png)
+
+![Concept 1](future_dev/images/1.png)
 
 ### 🧬 The Second Bottleneck: AI-Native Architecture
 Humans try to replicate human-centric development (readable code, conversational AI), but the AI's "mind" works differently. To achieve **One-Shot Perfection**, we must invert the paradigm.
