@@ -21,6 +21,16 @@ version: 2.0
 
 > Every task, subtask, and code modification **MUST** begin and end with documentation work. This is not optional. This is not a suggestion. This is mandatory.
 
+### Language Rule
+
+**All documentation, code comments, commit messages, and communications MUST be in English.**
+
+Exceptions:
+- Multi-language UI/UX (when building internationalized software)
+- User-facing content that requires localization
+
+This ensures consistency and accessibility for the global AI and developer community.
+
 ---
 
 ## ⚡ TOOL COMPATIBILITY & PRECEDENCE (THE "SUPREME LAW")
