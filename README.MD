@@ -176,6 +176,8 @@ Located in `automation/voice_*.py` — revolutionary voice-first development sys
 
 ## 🧠 Neuro-Semantics: EEG/BCI Research
 
+![Concept 8](future_dev/images/8.jpg)
+
 Located in `automation/neuro_semantics/` — research project for **mind-reading IDE integration**.
 
 **Goal:** 99% understanding of programmer intent without verbalization
@@ -251,6 +253,8 @@ We document **five interconnected layers**:
 ---
 
 ## 📚 Research Findings (Military-Grade + AI-First)
+
+![Concept 9](future_dev/images/9.jpg)
 
 **Hybrid Architecture:**
 - **Military-grade rigor** — MIL-STD-498, DO-178C, NASA-STD-2100
